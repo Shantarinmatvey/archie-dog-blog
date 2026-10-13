@@ -96,7 +96,6 @@
     logoLink: document.getElementById('logoLink'),
     navLinks: document.querySelectorAll('.nav-link'),
     openNewPostFocusBtn: document.getElementById('openNewPostFocusBtn'),
-    cloudSyncBadge: document.getElementById('cloudSyncBadge'),
 
     // Hero Profile
     profileAvatarImg: document.getElementById('profileAvatarImg'),
@@ -122,7 +121,6 @@
     countAll: document.getElementById('countAll'),
     countPhoto: document.getElementById('countPhoto'),
     countVideo: document.getElementById('countVideo'),
-    countLiked: document.getElementById('countLiked'),
     feedContainer: document.getElementById('feedContainer'),
     feedEmptyState: document.getElementById('feedEmptyState'),
     emptyStateDesc: document.getElementById('emptyStateDesc'),
@@ -290,26 +288,10 @@
         renderProfile();
         renderFeed();
       }
-
-      updateSyncBadge(true);
     } catch (err) {
       console.warn('Синхронизация временно недоступна, работаем с кэшем:', err);
-      updateSyncBadge(false);
     } finally {
       state.isSyncing = false;
-    }
-  }
-
-  function updateSyncBadge(isOnline) {
-    if (!DOM.cloudSyncBadge) return;
-    if (isOnline) {
-      DOM.cloudSyncBadge.innerHTML = '<span class="cloud-dot"></span> ☁️ Онлайн';
-      DOM.cloudSyncBadge.style.color = '#2E7D32';
-      DOM.cloudSyncBadge.title = 'Облачная база данных подключена (все устройства синхронизированы)';
-    } else {
-      DOM.cloudSyncBadge.innerHTML = '<span class="cloud-dot" style="background:#FFA000"></span> ☁️ Офлайн';
-      DOM.cloudSyncBadge.style.color = '#C27B35';
-      DOM.cloudSyncBadge.title = 'Работа с локальным кэшем';
     }
   }
 
@@ -426,14 +408,9 @@
       DOM.statLikesCount.textContent = totalLikes;
     }
 
-    const photoCount = state.posts.filter(p => (p.media || []).some(m => m.type === 'photo')).length;
-    const videoCount = state.posts.filter(p => (p.media || []).some(m => m.type === 'video')).length;
-    const likedCount = state.posts.filter(p => state.likedPostIds.has(p.id)).length;
-
     DOM.countAll.textContent = totalPosts;
     DOM.countPhoto.textContent = photoCount;
     DOM.countVideo.textContent = videoCount;
-    DOM.countLiked.textContent = likedCount;
   }
 
   // ==========================================================================
