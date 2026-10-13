@@ -153,7 +153,9 @@
   // ==========================================================================
 
   function normalizePostMedia(post) {
-    if (!post.media || !Array.isArray(post.media)) {
+    if (!post || typeof post !== 'object') return null;
+
+    if (!Array.isArray(post.media)) {
       if (post.mediaUrl) {
         post.media = [
           {
@@ -167,36 +169,89 @@
         post.media = [];
       }
     }
+
+    // Нормализуем каждый медиафайл внутри поста
+    post.media = post.media.filter(Boolean).map(m => {
+      if (typeof m === 'string') {
+        const isVid = m.startsWith('data:video') || /\.(mp4|webm|mov)$/i.test(m);
+        return { type: isVid ? 'video' : 'photo', url: m };
+      }
+      let mType = m.type || '';
+      if (mType.startsWith('video') || /\.(mp4|webm|mov)$/i.test(m.url || '')) {
+        mType = 'video';
+      } else {
+        mType = 'photo';
+      }
+      return {
+        type: mType,
+        url: m.url || '',
+        fallbackUrl: m.fallbackUrl || '',
+        posterUrl: m.posterUrl || '',
+        name: m.name || ''
+      };
+    });
+
+    if (!Array.isArray(post.comments)) {
+      post.comments = [];
+    }
+    if (typeof post.likes !== 'number') {
+      post.likes = 0;
+    }
+    if (typeof post.text !== 'string') {
+      post.text = post.text ? String(post.text) : '';
+    }
+    if (!post.createdAt) {
+      post.createdAt = new Date().toISOString();
+    }
+    if (!post.id) {
+      post.id = 'post_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    }
+
     return post;
   }
 
-  // Загрузка постов из Firebase
+  // Загрузка постов из Firebase с таймаутом и сортировкой
   async function fetchCloudPosts() {
     try {
-      const res = await fetch(`${FIREBASE_BASE_URL}/posts.json`, { cache: 'no-cache' });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      const res = await fetch(`${FIREBASE_BASE_URL}/posts.json`, {
+        cache: 'no-cache',
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (!data) return null;
 
-      let posts = [];
+      let rawPosts = [];
       if (Array.isArray(data)) {
-        posts = data.filter(Boolean);
+        rawPosts = data.filter(Boolean);
       } else if (typeof data === 'object') {
-        posts = Object.values(data);
+        rawPosts = Object.values(data).filter(Boolean);
       }
 
-      return posts.map(normalizePostMedia);
+      const normalized = rawPosts.map(normalizePostMedia).filter(Boolean);
+      // Сортировка: новые посты всегда сверху!
+      normalized.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      return normalized;
     } catch (err) {
       console.warn('Ошибка связи с Firebase:', err);
       return null;
     }
   }
 
-  // Сохранение постов в Firebase
+  // Сохранение постов в Firebase с защитой от квоты localStorage на мобильных
   async function saveCloudPosts(posts) {
     try {
-      // Сохраняем локально в кэш
-      localStorage.setItem(STORAGE_KEYS.POSTS_CACHE, JSON.stringify(posts));
+      // Сохраняем локально в кэш (перехватываем возможное QuotaExceededError на мобильном Safari)
+      try {
+        localStorage.setItem(STORAGE_KEYS.POSTS_CACHE, JSON.stringify(posts));
+      } catch (e) {
+        console.warn('Кэш localStorage переполнен, сохраняем напрямую в облако:', e);
+      }
 
       const res = await fetch(`${FIREBASE_BASE_URL}/posts.json`, {
         method: 'PUT',
@@ -226,7 +281,10 @@
   // Сохранение профиля в Firebase
   async function saveCloudProfile(profile) {
     try {
-      localStorage.setItem(STORAGE_KEYS.PROFILE_CACHE, JSON.stringify(profile));
+      try {
+        localStorage.setItem(STORAGE_KEYS.PROFILE_CACHE, JSON.stringify(profile));
+      } catch (e) {}
+
       await fetch(`${FIREBASE_BASE_URL}/profile.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -253,7 +311,10 @@
                      localStorage.getItem('archie_blog_posts_v1');
       if (cached) {
         try {
-          localPosts = JSON.parse(cached).map(normalizePostMedia);
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            localPosts = parsed.filter(Boolean).map(normalizePostMedia).filter(Boolean);
+          }
         } catch (e) {}
       }
 
@@ -261,7 +322,8 @@
 
       // Если в облаке еще ничего нет — сохраняем локальные или демо
       if (!mergedPosts || mergedPosts.length === 0) {
-        mergedPosts = localPosts.length > 0 ? localPosts : JSON.parse(JSON.stringify(DEFAULT_POSTS));
+        mergedPosts = localPosts.length > 0 ? localPosts : JSON.parse(JSON.stringify(DEFAULT_POSTS)).map(normalizePostMedia);
+        mergedPosts.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
         await saveCloudPosts(mergedPosts);
       } else if (localPosts.length > 0) {
         // Проверяем: есть ли в памяти телефона пост, которого еще нет в облаке?
@@ -271,14 +333,17 @@
         if (unsyncedLocalPosts.length > 0) {
           // Добавляем локальные посты в облако!
           mergedPosts = [...unsyncedLocalPosts, ...mergedPosts];
+          mergedPosts.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
           await saveCloudPosts(mergedPosts);
-          showToast(`☁️ Синхронизировано! Пост со смартфона добавлен в облако (${unsyncedLocalPosts.length})`, '✨');
         }
       }
 
       if (cloudProfile) {
         state.profile = cloudProfile;
       }
+
+      // Всегда сортируем: новые посты сверху
+      mergedPosts.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
       // Проверяем, изменились ли данные
       const currentHash = JSON.stringify(mergedPosts.map(p => ({ id: p.id, likes: p.likes, c: (p.comments || []).length })));
@@ -372,18 +437,8 @@
       .replace(/'/g, '&#039;');
   }
 
-  function showToast(message, icon = '🐾') {
-    const toast = document.createElement('div');
-    toast.className = 'toast-item';
-    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
-    DOM.toastContainer.appendChild(toast);
-
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateY(10px)';
-      toast.style.transition = 'all 0.3s ease';
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
+  function showToast() {
+    // Всплывающие уведомления полностью отключены по запросу пользователя
   }
 
   function renderProfile() {
@@ -610,27 +665,35 @@
       return;
     }
 
-    DOM.feedContainer.style.display = 'grid';
+    DOM.feedContainer.style.display = '';
     DOM.feedEmptyState.style.display = 'none';
 
     filtered.forEach(post => {
-      const card = createPostCardElement(post);
-      DOM.feedContainer.appendChild(card);
+      try {
+        const card = createPostCardElement(post);
+        if (card) {
+          DOM.feedContainer.appendChild(card);
+        }
+      } catch (err) {
+        console.error('Ошибка при создании карточки поста:', post?.id, err);
+      }
     });
   }
 
   function createPostCardElement(post) {
+    if (!post || typeof post !== 'object') return null;
+
     const card = document.createElement('article');
     card.className = 'post-card';
-    card.dataset.postId = post.id;
+    card.dataset.postId = post.id || '';
 
     const isLiked = state.likedPostIds.has(post.id);
     const commentsCount = (post.comments || []).length;
-    const mediaList = post.media || [];
+    const mediaList = Array.isArray(post.media) ? post.media : [];
 
     let typeLabel = '📝 Заметка';
-    const hasPhotos = mediaList.some(m => m.type === 'photo');
-    const hasVideos = mediaList.some(m => m.type === 'video');
+    const hasPhotos = mediaList.some(m => m && m.type === 'photo');
+    const hasVideos = mediaList.some(m => m && m.type === 'video');
     if (hasPhotos && hasVideos) {
       typeLabel = `📸🎥 Альбом (${mediaList.length})`;
     } else if (hasVideos) {
@@ -642,7 +705,7 @@
     let mediaHtml = '';
     if (mediaList.length > 1) {
       mediaHtml = createCarouselHtml(post.id, mediaList, post.text);
-    } else if (mediaList.length === 1) {
+    } else if (mediaList.length === 1 && mediaList[0]) {
       mediaHtml = createSingleMediaHtml(post.id, mediaList[0], post.text);
     }
 
@@ -670,7 +733,7 @@
           >
           <div class="post-author-meta">
             <span class="post-author-name">${escapeHtml(state.profile.name)}</span>
-            <time class="post-date" datetime="${post.createdAt}">${formatDate(post.createdAt)}</time>
+            <time class="post-date" datetime="${post.createdAt || ''}">${formatDate(post.createdAt)}</time>
           </div>
         </div>
         <div class="post-header-actions">
@@ -682,7 +745,7 @@
       ${mediaHtml}
 
       <div class="post-body">
-        <p class="post-story-text">${escapeHtml(post.text)}</p>
+        <p class="post-story-text">${escapeHtml(post.text || '')}</p>
       </div>
 
       <footer class="post-actions-bar">
@@ -716,10 +779,19 @@
     `;
 
     if (mediaList.length > 1) {
-      initPostCarousel(card.querySelector('.post-carousel-container'));
-    } else if (mediaList.length === 1 && mediaList[0].type === 'video') {
-      const playerWrap = card.querySelector('.custom-video-player');
-      if (playerWrap) initCustomVideoPlayer(playerWrap);
+      try {
+        const carousel = card.querySelector('.post-carousel-container');
+        if (carousel) initPostCarousel(carousel);
+      } catch (carouselErr) {
+        console.warn('Ошибка инициализации карусели:', carouselErr);
+      }
+    } else if (mediaList.length === 1 && mediaList[0] && mediaList[0].type === 'video') {
+      try {
+        const playerWrap = card.querySelector('.custom-video-player');
+        if (playerWrap) initCustomVideoPlayer(playerWrap);
+      } catch (playerErr) {
+        console.warn('Ошибка инициализации видеоплеера:', playerErr);
+      }
     }
 
     return card;
@@ -805,6 +877,8 @@
 
     const track = container.querySelector('.carousel-track');
     const slides = container.querySelectorAll('.carousel-slide');
+    if (!track || !slides || slides.length === 0) return;
+
     const prevBtn = container.querySelector('.carousel-prev-btn');
     const nextBtn = container.querySelector('.carousel-next-btn');
     const counterBadge = container.querySelector('.carousel-counter-badge');
@@ -814,29 +888,33 @@
     let currentIndex = 0;
 
     slides.forEach(slide => {
-      const player = slide.querySelector('.custom-video-player');
-      if (player) initCustomVideoPlayer(player);
+      try {
+        const player = slide.querySelector('.custom-video-player');
+        if (player) initCustomVideoPlayer(player);
+      } catch (e) {}
     });
 
     function pauseAllVideos() {
       slides.forEach(slide => {
-        const video = slide.querySelector('.custom-video-element');
-        const player = slide.querySelector('.custom-video-player');
-        if (video && !video.paused) {
-          video.pause();
-          if (player) {
-            player.classList.remove('playing');
-            player.classList.add('paused');
-            const playBtn = player.querySelector('.video-play-pause-btn');
-            if (playBtn) playBtn.textContent = '▶';
+        try {
+          const video = slide.querySelector('.custom-video-element');
+          const player = slide.querySelector('.custom-video-player');
+          if (video && !video.paused) {
+            video.pause();
+            if (player) {
+              player.classList.remove('playing');
+              player.classList.add('paused');
+              const playBtn = player.querySelector('.video-play-pause-btn');
+              if (playBtn) playBtn.textContent = '▶';
+            }
           }
-        }
+        } catch (e) {}
       });
     }
 
     function updateCarousel() {
       pauseAllVideos();
-      track.style.transform = `translateX(-${currentIndex * 100}%)`;
+      if (track) track.style.transform = `translateX(-${currentIndex * 100}%)`;
 
       if (counterBadge) counterBadge.textContent = `${currentIndex + 1} / ${total}`;
       if (prevBtn) prevBtn.style.display = currentIndex === 0 ? 'none' : 'flex';
@@ -872,10 +950,13 @@
     let touchEndX = 0;
 
     container.addEventListener('touchstart', (e) => {
-      touchStartX = e.changedTouches[0].screenX;
+      if (e.changedTouches && e.changedTouches[0]) {
+        touchStartX = e.changedTouches[0].screenX;
+      }
     }, { passive: true });
 
     container.addEventListener('touchend', (e) => {
+      if (!e.changedTouches || !e.changedTouches[0]) return;
       touchEndX = e.changedTouches[0].screenX;
       const diff = touchEndX - touchStartX;
       if (Math.abs(diff) > 40) {
@@ -942,7 +1023,9 @@
   // ==========================================================================
 
   function initCustomVideoPlayer(player) {
+    if (!player) return;
     const video = player.querySelector('.custom-video-element');
+    if (!video) return;
     const bigPlayBtn = player.querySelector('.video-big-play-btn');
     const playPauseBtn = player.querySelector('.video-play-pause-btn');
     const progressBar = player.querySelector('.video-progress-bar-container');
@@ -1425,9 +1508,13 @@
     const cachedPosts = localStorage.getItem(STORAGE_KEYS.POSTS_CACHE);
     if (cachedPosts) {
       try {
-        state.posts = JSON.parse(cachedPosts).map(normalizePostMedia);
-        renderProfile();
-        renderFeed();
+        const parsed = JSON.parse(cachedPosts);
+        if (Array.isArray(parsed)) {
+          state.posts = parsed.filter(Boolean).map(normalizePostMedia).filter(Boolean);
+          state.posts.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+          renderProfile();
+          renderFeed();
+        }
       } catch (e) {}
     }
 

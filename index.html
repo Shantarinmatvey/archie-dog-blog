@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Дневник Арчи 🐾 | Блог золотистого ретривера</title>
   <meta name="description" content="Уютный блог золотистого ретривера по имени Арчи. Прогулки, игры, фото и видеохроники счастливой собачьей жизни.">
   
@@ -14,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20261014_03">
 </head>
 <body>
   <!-- Background Decorative Shapes / Warm Ambient -->
@@ -274,10 +277,10 @@
     </div>
   </div>
 
-  <!-- Floating Toast Notifications -->
-  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+  <!-- Floating Toast Notifications (отключены) -->
+  <div class="toast-container" id="toastContainer" aria-live="polite" style="display: none !important;"></div>
 
-  <!-- Core JavaScript -->
-  <script src="app.js"></script>
+  <!-- Core JavaScript с версионированием для сброса кэша на мобильных устройствах -->
+  <script src="app.js?v=20261014_03"></script>
 </body>
 </html>
