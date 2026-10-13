@@ -1,16 +1,14 @@
 /**
  * ============================================================================
- * ДНЕВНИК АРЧИ 🐾 — ПОЛНОФУНКЦИОНАЛЬНЫЙ SPA СКРИПТ
+ * ДНЕВНИК АРЧИ 🐾 — ПОЛНОФУНКЦИОНАЛЬНЫЙ SPA СКРИПТ (v2 Лаконичный дизайн)
  * ============================================================================
- * Автономный JavaScript (ES6+):
- * - Хранение данных в localStorage с автоинициализацией строго 2 демо-постов
- * - Реактивное обновление счетчиков постов и суммарных «лапок»
- * - Поиск в реальном времени и фильтрация (Все / Фото / Видео / Любимые)
- * - Кастомный HTML5 видеоплеер с полосой прогресса и элементами управления
- * - Полноэкранный Lightbox для фотографий
- * - Микроанимации всплывающих лапок и звуковой/тактильный отклик
- * - Drag-and-Drop и FileReader для загрузки изображений и видео
- * - Редактирование профиля и комментарии
+ * - Чистый интерфейс: только текстовое поле + плюсик для прикрепления медиафайлов
+ * - Мультизагрузка: поддержка нескольких фото и видео в одной публикации
+ * - Инстаграм-карусель: перелистывание стрелками, свайпом, точками и счетчиком 1/N
+ * - Автопауза видео при переключении слайдов карусели
+ * - Кастомный видеоплеер с полосой прогресса
+ * - Полноэкранный Lightbox для фото
+ * - Хранение в localStorage с восстановлением демо-данных
  * ============================================================================
  */
 
@@ -19,21 +17,25 @@
 
   // --- КЛЮЧИ ХРАНИЛИЩА LOCALSTORAGE ---
   const STORAGE_KEYS = {
-    POSTS: 'archie_blog_posts_v1',
-    PROFILE: 'archie_blog_profile_v1',
-    LIKED_POSTS: 'archie_blog_liked_ids_v1'
+    POSTS: 'archie_blog_posts_v2',
+    PROFILE: 'archie_blog_profile_v2',
+    LIKED_POSTS: 'archie_blog_liked_ids_v2'
   };
 
-  // --- ДЕМО-ДАННЫЕ ПО УМОЛЧАНИЮ (СТРОГО 2 ЗАПИСИ ПО ТРЕБОВАНИЯМ) ---
+  // --- ДЕМО-ДАННЫЕ ПО УМОЛЧАНИЮ (СТРОГО 2 ЗАПИСИ) ---
   const DEFAULT_POSTS = [
     {
       id: 'demo-post-1',
-      type: 'photo',
-      mediaUrl: 'assets/autumn-dog.jpg',
-      fallbackMediaUrl: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=1000&q=80',
+      media: [
+        {
+          type: 'photo',
+          url: 'assets/autumn-dog.jpg',
+          fallbackUrl: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=1000&q=80'
+        }
+      ],
       text: 'Первый осенний забег! 🍂 Нашли в парке самый большой пушистый след осени и пересчитали все палки.',
       likes: 42,
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 часа назад
+      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
       comments: [
         {
           id: 'c1-1',
@@ -45,13 +47,17 @@
     },
     {
       id: 'demo-post-2',
-      type: 'video',
-      mediaUrl: 'assets/archie-video.webm',
-      fallbackMediaUrl: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/3/38/Dog_wagging_tail.webm/Dog_wagging_tail.webm.480p.vp9.webm',
-      posterUrl: 'assets/sleepy-dog.jpg',
+      media: [
+        {
+          type: 'video',
+          url: 'assets/archie-video.webm',
+          fallbackUrl: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/3/38/Dog_wagging_tail.webm/Dog_wagging_tail.webm.480p.vp9.webm',
+          posterUrl: 'assets/sleepy-dog.jpg'
+        }
+      ],
       text: 'Сонный субботний потягуш 💤 После длинной прогулки диван официально оккупирован.',
       likes: 38,
-      createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 часов назад
+      createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
       comments: [
         {
           id: 'c2-1',
@@ -77,24 +83,17 @@
     profile: { ...DEFAULT_PROFILE },
     likedPostIds: new Set(),
     activeFilter: 'all', // 'all' | 'photo' | 'video' | 'liked'
-    searchQuery: '',
-    // Временные данные для прикрепления в инлайн-креаторе и модалке
-    inlineDraftMedia: null, // { type: 'photo'|'video', url: string, file: File|null }
-    modalDraftMedia: null,
+    // Список прикрепленных к новому посту медиафайлов: Array<{ type: 'photo'|'video', url: string, name?: string }>
+    attachedMediaList: [],
     postToDeleteId: null
   };
 
-  // --- ССЫЛКИ НА КЛЮЧЕВЫЕ DOM ЭЛЕМЕНТЫ ---
+  // --- DOM ССЫЛКИ ---
   const DOM = {
-    // Header
     header: document.querySelector('.site-header'),
     logoLink: document.getElementById('logoLink'),
-    searchInput: document.getElementById('searchInput'),
-    clearSearchBtn: document.getElementById('clearSearchBtn'),
-    searchContainer: document.getElementById('searchContainer'),
-    mobileSearchToggle: document.getElementById('mobileSearchToggle'),
     navLinks: document.querySelectorAll('.nav-link'),
-    openNewPostModalBtn: document.getElementById('openNewPostModalBtn'),
+    openNewPostFocusBtn: document.getElementById('openNewPostFocusBtn'),
 
     // Hero Profile
     profileAvatarImg: document.getElementById('profileAvatarImg'),
@@ -104,26 +103,15 @@
     statPostsCount: document.getElementById('statPostsCount'),
     statLikesCount: document.getElementById('statLikesCount'),
     editProfileBtn: document.getElementById('editProfileBtn'),
-    aboutProfileBtn: document.getElementById('aboutProfileBtn'),
 
-    // Inline Creator
+    // Creator
     quickAvatarMini: document.getElementById('quickAvatarMini'),
     inlinePostText: document.getElementById('inlinePostText'),
-    inlineEmojiBar: document.getElementById('inlineEmojiBar'),
-    inlineMediaPreview: document.getElementById('inlineMediaPreview'),
-    inlinePreviewContent: document.getElementById('inlinePreviewContent'),
-    inlineRemoveMediaBtn: document.getElementById('inlineRemoveMediaBtn'),
-    inlineDropzone: document.getElementById('inlineDropzone'),
-    inlineFileInput: document.getElementById('inlineFileInput'),
-    inlineBrowseBtn: document.getElementById('inlineBrowseBtn'),
-    inlineUrlToggleBtn: document.getElementById('inlineUrlToggleBtn'),
-    inlineUrlRow: document.getElementById('inlineUrlRow'),
-    inlineUrlInput: document.getElementById('inlineUrlInput'),
-    inlineApplyUrlBtn: document.getElementById('inlineApplyUrlBtn'),
-    inlineAttachPhotoBtn: document.getElementById('inlineAttachPhotoBtn'),
-    inlineAttachVideoBtn: document.getElementById('inlineAttachVideoBtn'),
-    inlineAttachTextOnlyBtn: document.getElementById('inlineAttachTextOnlyBtn'),
-    inlineDndHint: document.getElementById('inlineDndHint'),
+    mediaFilesInput: document.getElementById('mediaFilesInput'),
+    btnAttachMedia: document.getElementById('btnAttachMedia'),
+    attachedMediaTray: document.getElementById('attachedMediaTray'),
+    mediaPreviewsList: document.getElementById('mediaPreviewsList'),
+    attachedCountBadge: document.getElementById('attachedCountBadge'),
     inlinePublishBtn: document.getElementById('inlinePublishBtn'),
 
     // Feed & Filters
@@ -132,28 +120,12 @@
     countPhoto: document.getElementById('countPhoto'),
     countVideo: document.getElementById('countVideo'),
     countLiked: document.getElementById('countLiked'),
-    searchFeedbackStrip: document.getElementById('searchFeedbackStrip'),
-    searchFeedbackQuery: document.getElementById('searchFeedbackQuery'),
-    resetSearchStripBtn: document.getElementById('resetSearchStripBtn'),
     feedContainer: document.getElementById('feedContainer'),
     feedEmptyState: document.getElementById('feedEmptyState'),
     emptyStateDesc: document.getElementById('emptyStateDesc'),
     emptyStateResetBtn: document.getElementById('emptyStateResetBtn'),
 
-    // Modals
-    newPostModal: document.getElementById('newPostModal'),
-    newPostForm: document.getElementById('newPostForm'),
-    modalPostText: document.getElementById('modalPostText'),
-    modalFileInput: document.getElementById('modalFileInput'),
-    modalBrowseBtn: document.getElementById('modalBrowseBtn'),
-    modalDropzone: document.getElementById('modalDropzone'),
-    modalUrlInput: document.getElementById('modalUrlInput'),
-    modalApplyUrlBtn: document.getElementById('modalApplyUrlBtn'),
-    modalMediaPreview: document.getElementById('modalMediaPreview'),
-    modalPreviewRender: document.getElementById('modalPreviewRender'),
-    modalRemoveMediaBtn: document.getElementById('modalRemoveMediaBtn'),
-    modalFormError: document.getElementById('modalFormError'),
-
+    // Edit Profile Modal
     editProfileModal: document.getElementById('editProfileModal'),
     editProfileForm: document.getElementById('editProfileForm'),
     editAvatarPreview: document.getElementById('editAvatarPreview'),
@@ -165,17 +137,14 @@
     editDogAge: document.getElementById('editDogAge'),
     editDogStatus: document.getElementById('editDogStatus'),
 
-    aboutProfileModal: document.getElementById('aboutProfileModal'),
+    // Delete Modal & Lightbox & Toast
     deleteConfirmModal: document.getElementById('deleteConfirmModal'),
     confirmDeletePostBtn: document.getElementById('confirmDeletePostBtn'),
-
-    // Lightbox & Toasts & FAB
     lightboxOverlay: document.getElementById('lightboxOverlay'),
     lightboxImg: document.getElementById('lightboxImg'),
     lightboxCaption: document.getElementById('lightboxCaption'),
     lightboxCloseBtn: document.getElementById('lightboxCloseBtn'),
     toastContainer: document.getElementById('toastContainer'),
-    mobileFabBtn: document.getElementById('mobileFabBtn'),
     resetDemoDataBtn: document.getElementById('resetDemoDataBtn')
   };
 
@@ -183,19 +152,36 @@
   // 1. ИНИЦИАЛИЗАЦИЯ И ХРАНИЛИЩЕ LOCALSTORAGE
   // ==========================================================================
 
+  function normalizePostMedia(post) {
+    // Поддержка обратной совместимости: если в посте старый формат mediaUrl
+    if (!post.media || !Array.isArray(post.media)) {
+      if (post.mediaUrl) {
+        post.media = [
+          {
+            type: post.type || 'photo',
+            url: post.mediaUrl,
+            fallbackUrl: post.fallbackMediaUrl,
+            posterUrl: post.posterUrl
+          }
+        ];
+      } else {
+        post.media = [];
+      }
+    }
+    return post;
+  }
+
   function loadStateFromStorage() {
     try {
-      // Загрузка постов
       const storedPosts = localStorage.getItem(STORAGE_KEYS.POSTS);
       if (storedPosts) {
-        state.posts = JSON.parse(storedPosts);
+        const parsed = JSON.parse(storedPosts);
+        state.posts = parsed.map(normalizePostMedia);
       } else {
-        // Если хранилище пустое — строго инициализируем 2 демо-постами
         state.posts = JSON.parse(JSON.stringify(DEFAULT_POSTS));
         savePostsToStorage();
       }
 
-      // Загрузка профиля
       const storedProfile = localStorage.getItem(STORAGE_KEYS.PROFILE);
       if (storedProfile) {
         state.profile = Object.assign({}, DEFAULT_PROFILE, JSON.parse(storedProfile));
@@ -204,7 +190,6 @@
         saveProfileToStorage();
       }
 
-      // Загрузка лайкнутых записей
       const storedLiked = localStorage.getItem(STORAGE_KEYS.LIKED_POSTS);
       if (storedLiked) {
         state.likedPostIds = new Set(JSON.parse(storedLiked));
@@ -212,7 +197,7 @@
         state.likedPostIds = new Set();
       }
     } catch (e) {
-      console.warn('Ошибка при чтении localStorage, используем данные по умолчанию:', e);
+      console.warn('Ошибка чтения localStorage:', e);
       state.posts = JSON.parse(JSON.stringify(DEFAULT_POSTS));
       state.profile = { ...DEFAULT_PROFILE };
       state.likedPostIds = new Set();
@@ -224,7 +209,7 @@
       localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(state.posts));
     } catch (e) {
       console.error('Ошибка записи постов в localStorage:', e);
-      showToast('⚠️ Не удалось сохранить данные: превышен лимит памяти браузера');
+      showToast('⚠️ Память браузера переполнена. Попробуйте прикрепить меньше медиа.');
     }
   }
 
@@ -232,7 +217,7 @@
     try {
       localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(state.profile));
     } catch (e) {
-      console.error('Ошибка записи профиля в localStorage:', e);
+      console.error('Ошибка записи профиля:', e);
     }
   }
 
@@ -240,12 +225,12 @@
     try {
       localStorage.setItem(STORAGE_KEYS.LIKED_POSTS, JSON.stringify(Array.from(state.likedPostIds)));
     } catch (e) {
-      console.error('Ошибка записи лайков в localStorage:', e);
+      console.error('Ошибка записи лайков:', e);
     }
   }
 
   // ==========================================================================
-  // 2. ФОРМАТИРОВАНИЕ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+  // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
   // ==========================================================================
 
   function formatDate(isoString) {
@@ -315,19 +300,16 @@
     const totalPosts = state.posts.length;
     const totalLikes = state.posts.reduce((sum, p) => sum + (p.likes || 0), 0);
 
-    // Счетчики в профиле
     DOM.statPostsCount.textContent = totalPosts;
-    
-    // Форматирование суммарных лапок (например, 80 или 1.2k)
     if (totalLikes >= 1000) {
       DOM.statLikesCount.textContent = (totalLikes / 1000).toFixed(1).replace('.0', '') + 'k';
     } else {
       DOM.statLikesCount.textContent = totalLikes;
     }
 
-    // Счетчики в табах фильтров
-    const photoCount = state.posts.filter(p => p.type === 'photo').length;
-    const videoCount = state.posts.filter(p => p.type === 'video').length;
+    // Количество по фильтрам
+    const photoCount = state.posts.filter(p => (p.media || []).some(m => m.type === 'photo')).length;
+    const videoCount = state.posts.filter(p => (p.media || []).some(m => m.type === 'video')).length;
     const likedCount = state.posts.filter(p => state.likedPostIds.has(p.id)).length;
 
     DOM.countAll.textContent = totalPosts;
@@ -337,24 +319,145 @@
   }
 
   // ==========================================================================
-  // 4. ОТРИСОВКА ЛЕНТЫ ПУБЛИКАЦИЙ (FEED)
+  // 4. МУЛЬТИЗАГРУЗКА МЕДИАФАЙЛОВ В КРЕАТОРЕ (ТОЛЬКО ТЕКСТ + ПЛЮСИК)
+  // ==========================================================================
+
+  // Клик по кнопке с плюсиком открывает диалог выбора файлов
+  DOM.btnAttachMedia.addEventListener('click', () => {
+    DOM.mediaFilesInput.click();
+  });
+
+  DOM.mediaFilesInput.addEventListener('change', () => {
+    const files = Array.from(DOM.mediaFilesInput.files || []);
+    if (!files.length) return;
+
+    let loadedCount = 0;
+    files.forEach(file => {
+      if (file.size > 50 * 1024 * 1024) {
+        showToast(`⚠️ Файл ${file.name} превышает 50 МБ`);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const isVideo = file.type.startsWith('video/') || file.name.match(/\.(mp4|webm|mov)$/i);
+        state.attachedMediaList.push({
+          type: isVideo ? 'video' : 'photo',
+          url: e.target.result,
+          name: file.name
+        });
+        loadedCount++;
+        renderAttachedMediaTray();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Сбрасываем инпут чтобы можно было добавить те же файлы снова
+    DOM.mediaFilesInput.value = '';
+  });
+
+  function renderAttachedMediaTray() {
+    const count = state.attachedMediaList.length;
+
+    if (count === 0) {
+      DOM.attachedMediaTray.style.display = 'none';
+      DOM.attachedCountBadge.style.display = 'none';
+      DOM.mediaPreviewsList.innerHTML = '';
+      return;
+    }
+
+    DOM.attachedMediaTray.style.display = 'block';
+    DOM.attachedCountBadge.style.display = 'inline-block';
+    DOM.attachedCountBadge.textContent = `${count} ${count === 1 ? 'файл' : count < 5 ? 'файла' : 'файлов'}`;
+
+    DOM.mediaPreviewsList.innerHTML = '';
+
+    state.attachedMediaList.forEach((item, index) => {
+      const thumbWrap = document.createElement('div');
+      thumbWrap.className = 'media-preview-thumb-wrap';
+
+      if (item.type === 'video') {
+        thumbWrap.innerHTML = `
+          <video src="${escapeHtml(item.url)}" class="media-preview-thumb-video" preload="metadata"></video>
+          <span class="thumb-video-badge">🎥 Видео</span>
+          <button type="button" class="thumb-remove-btn" data-remove-index="${index}" title="Удалить">✕</button>
+        `;
+      } else {
+        thumbWrap.innerHTML = `
+          <img src="${escapeHtml(item.url)}" alt="Превью" class="media-preview-thumb-img">
+          <button type="button" class="thumb-remove-btn" data-remove-index="${index}" title="Удалить">✕</button>
+        `;
+      }
+
+      // Кнопка удаления отдельного файла
+      thumbWrap.querySelector('.thumb-remove-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        state.attachedMediaList.splice(index, 1);
+        renderAttachedMediaTray();
+      });
+
+      DOM.mediaPreviewsList.appendChild(thumbWrap);
+    });
+  }
+
+  // Публикация записи
+  DOM.inlinePublishBtn.addEventListener('click', () => {
+    const text = DOM.inlinePostText.value.trim();
+    const media = state.attachedMediaList;
+
+    if (!text && media.length === 0) {
+      showToast('⚠️ Напишите текст истории или добавьте фото/видео через «+»');
+      DOM.inlinePostText.focus();
+      return;
+    }
+
+    const newPost = {
+      id: 'post_' + Date.now(),
+      media: [...media],
+      text: text,
+      likes: 0,
+      createdAt: new Date().toISOString(),
+      comments: []
+    };
+
+    state.posts.unshift(newPost);
+    savePostsToStorage();
+
+    // Сброс полей
+    DOM.inlinePostText.value = '';
+    state.attachedMediaList = [];
+    renderAttachedMediaTray();
+
+    renderFeed();
+    showToast('История опубликована в дневнике Арчи! 🐾🎉');
+
+    DOM.feedContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  // Кнопка шапки "+ Написать" на десктопе фокусирует поле ввода
+  if (DOM.openNewPostFocusBtn) {
+    DOM.openNewPostFocusBtn.addEventListener('click', () => {
+      DOM.inlinePostText.focus();
+      DOM.inlinePostText.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+
+  // ==========================================================================
+  // 5. ОТРИСОВКА ЛЕНТЫ ПУБЛИКАЦИЙ (FEED)
   // ==========================================================================
 
   function getFilteredPosts() {
     return state.posts.filter(post => {
-      // 1. Фильтр по категории
-      if (state.activeFilter === 'photo' && post.type !== 'photo') return false;
-      if (state.activeFilter === 'video' && post.type !== 'video') return false;
-      if (state.activeFilter === 'liked' && !state.likedPostIds.has(post.id)) return false;
-
-      // 2. Поиск по тексту
-      if (state.searchQuery.trim()) {
-        const query = state.searchQuery.toLowerCase().trim();
-        const textMatch = (post.text || '').toLowerCase().includes(query);
-        const commentMatch = (post.comments || []).some(c => (c.text || '').toLowerCase().includes(query));
-        if (!textMatch && !commentMatch) return false;
+      const media = post.media || [];
+      if (state.activeFilter === 'photo') {
+        return media.some(m => m.type === 'photo');
       }
-
+      if (state.activeFilter === 'video') {
+        return media.some(m => m.type === 'video');
+      }
+      if (state.activeFilter === 'liked') {
+        return state.likedPostIds.has(post.id);
+      }
       return true;
     });
   }
@@ -369,16 +472,14 @@
       DOM.feedContainer.style.display = 'none';
       DOM.feedEmptyState.style.display = 'block';
 
-      if (state.searchQuery.trim()) {
-        DOM.emptyStateDesc.textContent = `По запросу «${state.searchQuery}» ничего не найдено. Попробуйте поискать другие слова.`;
-      } else if (state.activeFilter === 'liked') {
-        DOM.emptyStateDesc.textContent = 'Вы еще не поставили ни одной лапки 🐾 Нажмите «Дай лапу!» под понравившимся постом.';
+      if (state.activeFilter === 'liked') {
+        DOM.emptyStateDesc.textContent = 'Вы еще не поставили ни одной лапки 🐾 Нажмите «Дай лапу!» под записью.';
       } else if (state.activeFilter === 'photo') {
         DOM.emptyStateDesc.textContent = 'В ленте пока нет записей с фотографиями.';
       } else if (state.activeFilter === 'video') {
         DOM.emptyStateDesc.textContent = 'В ленте пока нет записей с видеороликами.';
       } else {
-        DOM.emptyStateDesc.textContent = 'В дневнике пока нет записей. Создайте первую с помощью формы выше!';
+        DOM.emptyStateDesc.textContent = 'В дневнике пока нет записей. Напишите первую историю выше!';
       }
       return;
     }
@@ -386,13 +487,13 @@
     DOM.feedContainer.style.display = 'grid';
     DOM.feedEmptyState.style.display = 'none';
 
-    // Создаем карточки постов
     filtered.forEach(post => {
       const card = createPostCardElement(post);
       DOM.feedContainer.appendChild(card);
     });
   }
 
+  // Создание элемента карточки
   function createPostCardElement(post) {
     const card = document.createElement('article');
     card.className = 'post-card';
@@ -400,59 +501,29 @@
 
     const isLiked = state.likedPostIds.has(post.id);
     const commentsCount = (post.comments || []).length;
-    const typeLabel = post.type === 'photo' ? '📸 Фото' : post.type === 'video' ? '🎥 Видео' : '📝 Заметка';
+    const mediaList = post.media || [];
 
-    // 1. Шапка карточки
-    let mediaHtml = '';
-    if (post.type === 'photo' && post.mediaUrl) {
-      mediaHtml = `
-        <div class="post-media-wrap" data-lightbox-src="${escapeHtml(post.mediaUrl)}" data-lightbox-caption="${escapeHtml(post.text)}">
-          <img 
-            src="${escapeHtml(post.mediaUrl)}" 
-            alt="Фотография Арчи" 
-            class="post-photo-img" 
-            loading="lazy"
-            onerror="if(this.src!=='${post.fallbackMediaUrl || ''}') this.src='${post.fallbackMediaUrl || ''}';"
-          >
-          <div class="photo-zoom-hint">🔍 Увеличить</div>
-        </div>
-      `;
-    } else if (post.type === 'video' && post.mediaUrl) {
-      mediaHtml = `
-        <div class="post-media-wrap custom-video-player paused" id="player-${post.id}">
-          <video 
-            class="custom-video-element" 
-            src="${escapeHtml(post.mediaUrl)}" 
-            poster="${escapeHtml(post.posterUrl || 'assets/sleepy-dog.jpg')}"
-            preload="metadata" 
-            loop 
-            playsinline
-          ></video>
-          <!-- Большая кнопка воспроизведения в центре -->
-          <button type="button" class="video-big-play-btn" title="Воспроизвести видео" aria-label="Воспроизвести">
-            <span>▶</span>
-          </button>
-          <!-- Нижняя панель управления видео -->
-          <div class="video-controls-overlay">
-            <div class="video-progress-bar-container" title="Перемотка">
-              <div class="video-progress-filled"></div>
-            </div>
-            <div class="video-controls-row">
-              <div class="video-ctrl-left">
-                <button type="button" class="video-ctrl-btn video-play-pause-btn" title="Пауза / Плей">▶</button>
-                <span class="video-time-display">0:00 / 0:00</span>
-              </div>
-              <div class="video-ctrl-right">
-                <button type="button" class="video-ctrl-btn video-mute-btn" title="Звук">🔊</button>
-                <button type="button" class="video-ctrl-btn video-fullscreen-btn" title="На весь экран">⛶</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
+    // Определяем ярлык типа
+    let typeLabel = '📝 Заметка';
+    const hasPhotos = mediaList.some(m => m.type === 'photo');
+    const hasVideos = mediaList.some(m => m.type === 'video');
+    if (hasPhotos && hasVideos) {
+      typeLabel = `📸🎥 Альбом (${mediaList.length})`;
+    } else if (hasVideos) {
+      typeLabel = mediaList.length > 1 ? `🎥 Видео (${mediaList.length})` : '🎥 Видео';
+    } else if (hasPhotos) {
+      typeLabel = mediaList.length > 1 ? `📸 Фото (${mediaList.length})` : '📸 Фото';
     }
 
-    // Список существующих комментариев
+    // Генерация медиа-блока: если > 1 элемента — Инстаграм-карусель!
+    let mediaHtml = '';
+    if (mediaList.length > 1) {
+      mediaHtml = createCarouselHtml(post.id, mediaList, post.text);
+    } else if (mediaList.length === 1) {
+      mediaHtml = createSingleMediaHtml(post.id, mediaList[0], post.text);
+    }
+
+    // Комментарии
     const commentsListHtml = (post.comments || []).map(c => `
       <div class="comment-item">
         <div class="comment-author-avatar">${escapeHtml(c.author ? c.author.charAt(0).toUpperCase() : '🐾')}</div>
@@ -522,19 +593,245 @@
       </div>
     `;
 
-    // Привязываем обработчики для кастомного видеоплеера, если это видео
-    if (post.type === 'video') {
+    // Инициализация карусели или одиночного видео
+    if (mediaList.length > 1) {
+      initPostCarousel(card.querySelector('.post-carousel-container'));
+    } else if (mediaList.length === 1 && mediaList[0].type === 'video') {
       const playerWrap = card.querySelector('.custom-video-player');
-      if (playerWrap) {
-        initCustomVideoPlayer(playerWrap);
-      }
+      if (playerWrap) initCustomVideoPlayer(playerWrap);
     }
 
     return card;
   }
 
   // ==========================================================================
-  // 5. КАСТОМНЫЙ HTML5 ВИДЕОПЛЕЕР
+  // 6. ИНСТАГРАМ-КАРУСЕЛЬ (ПЕРЕЛИСТЫВАНИЕ МЕДИАФАЙЛОВ)
+  // ==========================================================================
+
+  function createCarouselHtml(postId, mediaList, caption) {
+    const total = mediaList.length;
+
+    const slidesHtml = mediaList.map((m, index) => {
+      if (m.type === 'video') {
+        return `
+          <div class="carousel-slide" data-slide-index="${index}">
+            <div class="custom-video-player paused" id="player-${postId}-${index}">
+              <video 
+                class="custom-video-element" 
+                src="${escapeHtml(m.url)}" 
+                poster="${escapeHtml(m.posterUrl || 'assets/sleepy-dog.jpg')}"
+                preload="metadata" 
+                loop 
+                playsinline
+              ></video>
+              <button type="button" class="video-big-play-btn" title="Воспроизвести">
+                <span>▶</span>
+              </button>
+              <div class="video-controls-overlay">
+                <div class="video-progress-bar-container">
+                  <div class="video-progress-filled"></div>
+                </div>
+                <div class="video-controls-row">
+                  <div class="video-ctrl-left">
+                    <button type="button" class="video-ctrl-btn video-play-pause-btn">▶</button>
+                    <span class="video-time-display">0:00 / 0:00</span>
+                  </div>
+                  <div class="video-ctrl-right">
+                    <button type="button" class="video-ctrl-btn video-mute-btn">🔊</button>
+                    <button type="button" class="video-ctrl-btn video-fullscreen-btn">⛶</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        return `
+          <div class="carousel-slide" data-slide-index="${index}">
+            <img 
+              src="${escapeHtml(m.url)}" 
+              alt="Фотография" 
+              class="carousel-slide-photo" 
+              loading="lazy"
+              data-lightbox-src="${escapeHtml(m.url)}" 
+              data-lightbox-caption="${escapeHtml(caption)}"
+              onerror="if(this.src!=='${m.fallbackUrl || ''}') this.src='${m.fallbackUrl || ''}';"
+            >
+          </div>
+        `;
+      }
+    }).join('');
+
+    const dotsHtml = mediaList.map((_, i) => `<span class="carousel-dot ${i === 0 ? 'active' : ''}"></span>`).join('');
+
+    return `
+      <div class="post-carousel-container" data-post-id="${postId}">
+        <div class="carousel-counter-badge">1 / ${total}</div>
+        <div class="carousel-track">
+          ${slidesHtml}
+        </div>
+        <button type="button" class="carousel-nav-btn carousel-prev-btn" style="display: none;" title="Предыдущее">‹</button>
+        <button type="button" class="carousel-nav-btn carousel-next-btn" title="Следующее">›</button>
+        <div class="carousel-dots">
+          ${dotsHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  function initPostCarousel(container) {
+    if (!container) return;
+
+    const track = container.querySelector('.carousel-track');
+    const slides = container.querySelectorAll('.carousel-slide');
+    const prevBtn = container.querySelector('.carousel-prev-btn');
+    const nextBtn = container.querySelector('.carousel-next-btn');
+    const counterBadge = container.querySelector('.carousel-counter-badge');
+    const dots = container.querySelectorAll('.carousel-dot');
+    const total = slides.length;
+
+    let currentIndex = 0;
+
+    // Инициализация видеоплееров внутри слайдов
+    slides.forEach(slide => {
+      const player = slide.querySelector('.custom-video-player');
+      if (player) initCustomVideoPlayer(player);
+    });
+
+    function pauseAllVideos() {
+      slides.forEach(slide => {
+        const video = slide.querySelector('.custom-video-element');
+        const player = slide.querySelector('.custom-video-player');
+        if (video && !video.paused) {
+          video.pause();
+          if (player) {
+            player.classList.remove('playing');
+            player.classList.add('paused');
+            const playBtn = player.querySelector('.video-play-pause-btn');
+            if (playBtn) playBtn.textContent = '▶';
+          }
+        }
+      });
+    }
+
+    function updateCarousel() {
+      pauseAllVideos();
+      track.style.transform = `translateX(-${currentIndex * 100}%)`;
+
+      // Счетчик 1 / N
+      if (counterBadge) {
+        counterBadge.textContent = `${currentIndex + 1} / ${total}`;
+      }
+
+      // Стрелки навигации
+      if (prevBtn) prevBtn.style.display = currentIndex === 0 ? 'none' : 'flex';
+      if (nextBtn) nextBtn.style.display = currentIndex === total - 1 ? 'none' : 'flex';
+
+      // Точки
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === currentIndex);
+      });
+    }
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentIndex > 0) {
+          currentIndex--;
+          updateCarousel();
+        }
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentIndex < total - 1) {
+          currentIndex++;
+          updateCarousel();
+        }
+      });
+    }
+
+    // Поддержка сенсорных свайпов (Mobile Touch Swipe)
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    container.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    container.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
+      const diff = touchEndX - touchStartX;
+      if (Math.abs(diff) > 40) {
+        if (diff < 0 && currentIndex < total - 1) {
+          // Свайп влево -> следующий
+          currentIndex++;
+          updateCarousel();
+        } else if (diff > 0 && currentIndex > 0) {
+          // Свайп вправо -> предыдущий
+          currentIndex--;
+          updateCarousel();
+        }
+      }
+    }
+  }
+
+  // Одиночное медиа (1 фото или 1 видео)
+  function createSingleMediaHtml(postId, media, caption) {
+    if (media.type === 'video') {
+      return `
+        <div class="post-media-wrap custom-video-player paused" id="player-${postId}">
+          <video 
+            class="custom-video-element" 
+            src="${escapeHtml(media.url)}" 
+            poster="${escapeHtml(media.posterUrl || 'assets/sleepy-dog.jpg')}"
+            preload="metadata" 
+            loop 
+            playsinline
+          ></video>
+          <button type="button" class="video-big-play-btn" title="Воспроизвести">
+            <span>▶</span>
+          </button>
+          <div class="video-controls-overlay">
+            <div class="video-progress-bar-container">
+              <div class="video-progress-filled"></div>
+            </div>
+            <div class="video-controls-row">
+              <div class="video-ctrl-left">
+                <button type="button" class="video-ctrl-btn video-play-pause-btn">▶</button>
+                <span class="video-time-display">0:00 / 0:00</span>
+              </div>
+              <div class="video-ctrl-right">
+                <button type="button" class="video-ctrl-btn video-mute-btn">🔊</button>
+                <button type="button" class="video-ctrl-btn video-fullscreen-btn">⛶</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="post-media-wrap" data-lightbox-src="${escapeHtml(media.url)}" data-lightbox-caption="${escapeHtml(caption)}">
+        <img 
+          src="${escapeHtml(media.url)}" 
+          alt="Фотография Арчи" 
+          class="post-photo-img" 
+          loading="lazy"
+          onerror="if(this.src!=='${media.fallbackUrl || ''}') this.src='${media.fallbackUrl || ''}';"
+        >
+      </div>
+    `;
+  }
+
+  // ==========================================================================
+  // 7. КАСТОМНЫЙ ВИДЕОПЛЕЕР
   // ==========================================================================
 
   function initCustomVideoPlayer(player) {
@@ -559,91 +856,94 @@
         video.play().then(() => {
           player.classList.remove('paused');
           player.classList.add('playing');
-          playPauseBtn.textContent = '⏸';
+          if (playPauseBtn) playPauseBtn.textContent = '⏸';
         }).catch(err => {
-          console.warn('Автовоспроизведение заблокировано браузером:', err);
+          console.warn('Воспроизведение заблокировано браузером:', err);
         });
       } else {
         video.pause();
         player.classList.remove('playing');
         player.classList.add('paused');
-        playPauseBtn.textContent = '▶';
+        if (playPauseBtn) playPauseBtn.textContent = '▶';
       }
     }
 
-    // Слушатели клика по видео или большой кнопке
-    bigPlayBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      togglePlay();
-    });
+    if (bigPlayBtn) {
+      bigPlayBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePlay();
+      });
+    }
 
     video.addEventListener('click', () => {
       togglePlay();
     });
 
-    playPauseBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      togglePlay();
-    });
+    if (playPauseBtn) {
+      playPauseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePlay();
+      });
+    }
 
-    // Обновление таймкода и прогресса
     video.addEventListener('timeupdate', () => {
       if (!isNaN(video.duration) && video.duration > 0) {
         const percent = (video.currentTime / video.duration) * 100;
-        progressFill.style.width = `${percent}%`;
-        timeDisplay.textContent = `${formatVideoTime(video.currentTime)} / ${formatVideoTime(video.duration)}`;
+        if (progressFill) progressFill.style.width = `${percent}%`;
+        if (timeDisplay) timeDisplay.textContent = `${formatVideoTime(video.currentTime)} / ${formatVideoTime(video.duration)}`;
       }
     });
 
     video.addEventListener('loadedmetadata', () => {
-      timeDisplay.textContent = `0:00 / ${formatVideoTime(video.duration)}`;
+      if (timeDisplay) timeDisplay.textContent = `0:00 / ${formatVideoTime(video.duration)}`;
     });
 
-    // Перемотка кликом по прогрессбару
-    progressBar.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const rect = progressBar.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const width = rect.width;
-      if (width > 0 && !isNaN(video.duration)) {
-        const targetTime = (clickX / width) * video.duration;
-        video.currentTime = targetTime;
-      }
-    });
-
-    // Звук / Mute
-    muteBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      video.muted = !video.muted;
-      muteBtn.textContent = video.muted ? '🔇' : '🔊';
-    });
-
-    // Полноэкранный режим
-    fullscreenBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (!document.fullscreenElement) {
-        if (player.requestFullscreen) {
-          player.requestFullscreen();
-        } else if (video.webkitEnterFullscreen) {
-          video.webkitEnterFullscreen();
+    if (progressBar) {
+      progressBar.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const rect = progressBar.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const width = rect.width;
+        if (width > 0 && !isNaN(video.duration)) {
+          video.currentTime = (clickX / width) * video.duration;
         }
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        }
-      }
-    });
+      });
+    }
 
-    // Окончание видео (так как зациклено loop, на случай если paused)
+    if (muteBtn) {
+      muteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        video.muted = !video.muted;
+        muteBtn.textContent = video.muted ? '🔇' : '🔊';
+      });
+    }
+
+    if (fullscreenBtn) {
+      fullscreenBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!document.fullscreenElement) {
+          if (player.requestFullscreen) {
+            player.requestFullscreen();
+          } else if (video.webkitEnterFullscreen) {
+            video.webkitEnterFullscreen();
+          }
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          }
+        }
+      });
+    }
+
     video.addEventListener('ended', () => {
       player.classList.remove('playing');
       player.classList.add('paused');
-      playPauseBtn.textContent = '▶';
+      if (playPauseBtn) playPauseBtn.textContent = '▶';
     });
   }
 
   // ==========================================================================
-  // 6. МИКРОАНИМАЦИЯ ВСПЛЫВАЮЩИХ ЛАПОК И РЕАКЦИИ («ДАЙ ЛАПУ!»)
+  // 8. РЕАКЦИИ («ДАЙ ЛАПУ!») И КОММЕНТАРИИ
   // ==========================================================================
 
   function triggerPawBurst(buttonElement) {
@@ -654,16 +954,11 @@
       const paw = document.createElement('span');
       paw.className = 'floating-paw';
       paw.textContent = icon;
-
-      // Случайное смещение по горизонтали
-      const randomX = (Math.random() - 0.5) * 44;
-      const randomY = -10 - Math.random() * 15;
+      const randomX = (Math.random() - 0.5) * 40;
       paw.style.left = `${(rect.width / 2) + randomX}px`;
-      paw.style.top = `${randomY}px`;
+      paw.style.top = `-10px`;
       paw.style.animationDelay = `${i * 0.08}s`;
-
       buttonElement.appendChild(paw);
-
       setTimeout(() => paw.remove(), 1000);
     });
   }
@@ -675,14 +970,12 @@
     const isCurrentlyLiked = state.likedPostIds.has(postId);
 
     if (isCurrentlyLiked) {
-      // Снимаем лайк
       state.likedPostIds.delete(postId);
       post.likes = Math.max(0, (post.likes || 1) - 1);
       buttonElement.classList.remove('liked');
       buttonElement.querySelector('.like-btn-text').textContent = 'Дай лапу!';
       showToast('Вы забрали лапку назад 🐾');
     } else {
-      // Ставим лайк
       state.likedPostIds.add(postId);
       post.likes = (post.likes || 0) + 1;
       buttonElement.classList.add('liked');
@@ -692,20 +985,14 @@
     }
 
     buttonElement.querySelector('.like-counter').textContent = `(${post.likes})`;
-
     savePostsToStorage();
     saveLikedToStorage();
     updateCounters();
   }
 
-  // ==========================================================================
-  // 7. КОММЕНТАРИИ: ДОБАВЛЕНИЕ И СВОРАЧИВАНИЕ
-  // ==========================================================================
-
   function toggleCommentsDrawer(postId, card) {
     const drawer = card.querySelector(`#comments-${postId}`);
     if (!drawer) return;
-
     drawer.classList.toggle('open');
     if (drawer.classList.contains('open')) {
       const input = drawer.querySelector('.comment-input');
@@ -722,8 +1009,6 @@
     if (!post) return;
 
     if (!post.comments) post.comments = [];
-
-    // Имя комментатора (берем сохраненное имя или "Гость")
     const authorName = localStorage.getItem('archie_commenter_name') || 'Гость блога';
 
     const newComment = {
@@ -736,11 +1021,8 @@
     post.comments.push(newComment);
     savePostsToStorage();
 
-    // Обновляем список комментариев в DOM
     const drawer = formElement.closest('.comments-drawer');
     const list = drawer.querySelector('.comments-list');
-    
-    // Удаляем заглушку если была
     const emptyNotice = list.querySelector('.comment-empty');
     if (emptyNotice) emptyNotice.remove();
 
@@ -758,18 +1040,15 @@
     `;
     list.appendChild(commentNode);
 
-    // Очищаем инпут и обновляем счетчик кнопки
     input.value = '';
     const toggleBtn = formElement.closest('.post-card').querySelector('.comments-btn-label');
-    if (toggleBtn) {
-      toggleBtn.textContent = `Комментировать (${post.comments.length})`;
-    }
+    if (toggleBtn) toggleBtn.textContent = `Комментировать (${post.comments.length})`;
 
-    showToast('Комментарий успешно добавлен! 💬');
+    showToast('Комментарий добавлен! 💬');
   }
 
   // ==========================================================================
-  // 8. УДАЛЕНИЕ ЗАПИСЕЙ С ПОДТВЕРЖДЕНИЕМ
+  // 9. УДАЛЕНИЕ ЗАПИСЕЙ
   // ==========================================================================
 
   function promptDeletePost(postId) {
@@ -787,7 +1066,7 @@
       savePostsToStorage();
       saveLikedToStorage();
       renderFeed();
-      showToast('Запись удалена из дневника', '🗑️');
+      showToast('Запись удалена', '🗑️');
     }
 
     state.postToDeleteId = null;
@@ -795,311 +1074,7 @@
   });
 
   // ==========================================================================
-  // 9. СОЗДАНИЕ ПУБЛИКАЦИЙ: ОБРАБОТКА МЕДИА (DRAG & DROP, ФАЙЛЫ, URL)
-  // ==========================================================================
-
-  function readFileAsDataUrl(file, callback) {
-    if (!file) return;
-
-    // Валидация размера: до 50 МБ
-    if (file.size > 50 * 1024 * 1024) {
-      showToast('⚠️ Файл слишком большой. Выберите размер до 50 МБ.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const isVideo = file.type.startsWith('video/') || file.name.match(/\.(mp4|webm|mov)$/i);
-      callback({
-        type: isVideo ? 'video' : 'photo',
-        url: e.target.result,
-        fileName: file.name
-      });
-    };
-    reader.onerror = () => {
-      showToast('⚠️ Ошибка при чтении файла');
-    };
-    reader.readAsDataURL(file);
-  }
-
-  // Настройка Drag-and-Drop для указанного контейнера
-  function setupDropzone(dropzoneEl, fileInputEl, onMediaSelected) {
-    ['dragenter', 'dragover'].forEach(eventName => {
-      dropzoneEl.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        dropzoneEl.classList.add('dragover');
-      });
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-      dropzoneEl.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        dropzoneEl.classList.remove('dragover');
-      });
-    });
-
-    dropzoneEl.addEventListener('drop', (e) => {
-      const dt = e.dataTransfer;
-      const files = dt.files;
-      if (files && files.length > 0) {
-        readFileAsDataUrl(files[0], onMediaSelected);
-      }
-    });
-
-    fileInputEl.addEventListener('change', () => {
-      if (fileInputEl.files && fileInputEl.files.length > 0) {
-        readFileAsDataUrl(fileInputEl.files[0], onMediaSelected);
-      }
-    });
-  }
-
-  // --- ИНЛАЙН КРЕАТОР НА СТРАНИЦЕ ---
-  function updateInlinePreview() {
-    if (state.inlineDraftMedia && state.inlineDraftMedia.url) {
-      DOM.inlineMediaPreview.style.display = 'block';
-      DOM.inlineDropzone.style.display = 'none';
-
-      if (state.inlineDraftMedia.type === 'video') {
-        DOM.inlinePreviewContent.innerHTML = `
-          <video src="${escapeHtml(state.inlineDraftMedia.url)}" controls style="max-height:220px;width:100%;border-radius:12px;"></video>
-        `;
-      } else {
-        DOM.inlinePreviewContent.innerHTML = `
-          <img src="${escapeHtml(state.inlineDraftMedia.url)}" alt="Превью" style="max-height:220px;border-radius:12px;display:block;margin:0 auto;">
-        `;
-      }
-    } else {
-      DOM.inlineMediaPreview.style.display = 'none';
-      DOM.inlinePreviewContent.innerHTML = '';
-    }
-  }
-
-  setupDropzone(DOM.inlineDropzone, DOM.inlineFileInput, (media) => {
-    state.inlineDraftMedia = media;
-    updateInlinePreview();
-    showToast('Медиа прикреплено к записи! 📸');
-  });
-
-  DOM.inlineBrowseBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    DOM.inlineFileInput.click();
-  });
-
-  DOM.inlineDndHint.addEventListener('click', () => {
-    DOM.inlineDropzone.style.display = DOM.inlineDropzone.style.display === 'none' ? 'block' : 'none';
-  });
-
-  DOM.inlineAttachPhotoBtn.addEventListener('click', () => {
-    DOM.inlineFileInput.accept = 'image/*';
-    DOM.inlineDropzone.style.display = 'block';
-    DOM.inlineFileInput.click();
-  });
-
-  DOM.inlineAttachVideoBtn.addEventListener('click', () => {
-    DOM.inlineFileInput.accept = 'video/*';
-    DOM.inlineDropzone.style.display = 'block';
-    DOM.inlineFileInput.click();
-  });
-
-  DOM.inlineAttachTextOnlyBtn.addEventListener('click', () => {
-    state.inlineDraftMedia = null;
-    DOM.inlineDropzone.style.display = 'none';
-    DOM.inlineMediaPreview.style.display = 'none';
-    showToast('Режим текстовой публикации ✏️');
-  });
-
-  DOM.inlineRemoveMediaBtn.addEventListener('click', () => {
-    state.inlineDraftMedia = null;
-    DOM.inlineFileInput.value = '';
-    updateInlinePreview();
-  });
-
-  DOM.inlineUrlToggleBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    DOM.inlineUrlRow.style.display = DOM.inlineUrlRow.style.display === 'none' ? 'flex' : 'none';
-  });
-
-  DOM.inlineApplyUrlBtn.addEventListener('click', () => {
-    const url = DOM.inlineUrlInput.value.trim();
-    if (!url) return;
-    const isVideo = url.match(/\.(mp4|webm|mov|ogg)($|\?)/i);
-    state.inlineDraftMedia = {
-      type: isVideo ? 'video' : 'photo',
-      url: url
-    };
-    updateInlinePreview();
-    DOM.inlineUrlRow.style.display = 'none';
-    DOM.inlineUrlInput.value = '';
-    showToast('Медиа по ссылке загружено! ✨');
-  });
-
-  // Публикация из инлайн-креатора
-  DOM.inlinePublishBtn.addEventListener('click', () => {
-    const text = DOM.inlinePostText.value.trim();
-    const media = state.inlineDraftMedia;
-
-    // Валидация: нужен либо текст, либо медиа
-    if (!text && !media) {
-      showToast('⚠️ Напишите текст истории или прикрепите фото/видео');
-      DOM.inlinePostText.focus();
-      return;
-    }
-
-    const newPost = {
-      id: 'post_' + Date.now(),
-      type: media ? media.type : 'none',
-      mediaUrl: media ? media.url : null,
-      posterUrl: media && media.type === 'video' ? 'assets/sleepy-dog.jpg' : null,
-      text: text,
-      likes: 0,
-      createdAt: new Date().toISOString(),
-      comments: []
-    };
-
-    // Добавляем в начало ленты
-    state.posts.unshift(newPost);
-    savePostsToStorage();
-
-    // Очищаем форму инлайн-креатора
-    DOM.inlinePostText.value = '';
-    state.inlineDraftMedia = null;
-    DOM.inlineFileInput.value = '';
-    DOM.inlineDropzone.style.display = 'none';
-    updateInlinePreview();
-
-    renderFeed();
-    showToast('Новая история Арчи опубликована! 🐾🎉');
-
-    // Плавная прокрутка к началу ленты
-    DOM.feedContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-
-  // --- МОДАЛЬНОЕ ОКНО СОЗДАНИЯ ПОСТА ---
-  function updateModalPreview() {
-    if (state.modalDraftMedia && state.modalDraftMedia.url) {
-      DOM.modalMediaPreview.style.display = 'block';
-      DOM.modalDropzone.style.display = 'none';
-
-      if (state.modalDraftMedia.type === 'video') {
-        DOM.modalPreviewRender.innerHTML = `
-          <video src="${escapeHtml(state.modalDraftMedia.url)}" controls style="max-height:220px;width:100%;border-radius:12px;"></video>
-        `;
-      } else {
-        DOM.modalPreviewRender.innerHTML = `
-          <img src="${escapeHtml(state.modalDraftMedia.url)}" alt="Превью" style="max-height:220px;border-radius:12px;display:block;margin:0 auto;">
-        `;
-      }
-    } else {
-      DOM.modalMediaPreview.style.display = 'none';
-      DOM.modalPreviewRender.innerHTML = '';
-      DOM.modalDropzone.style.display = 'block';
-    }
-  }
-
-  setupDropzone(DOM.modalDropzone, DOM.modalFileInput, (media) => {
-    state.modalDraftMedia = media;
-    updateModalPreview();
-  });
-
-  DOM.modalBrowseBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    DOM.modalFileInput.click();
-  });
-
-  DOM.modalRemoveMediaBtn.addEventListener('click', () => {
-    state.modalDraftMedia = null;
-    DOM.modalFileInput.value = '';
-    updateModalPreview();
-  });
-
-  DOM.modalApplyUrlBtn.addEventListener('click', () => {
-    const url = DOM.modalUrlInput.value.trim();
-    if (!url) return;
-    const isVideo = url.match(/\.(mp4|webm|mov|ogg)($|\?)/i);
-    state.modalDraftMedia = {
-      type: isVideo ? 'video' : 'photo',
-      url: url
-    };
-    updateModalPreview();
-    DOM.modalUrlInput.value = '';
-    showToast('Ссылка на медиа добавлена! 🔗');
-  });
-
-  // Радио-переключатель типа медиа в модалке
-  document.querySelectorAll('input[name="modalMediaType"]').forEach(radio => {
-    radio.addEventListener('change', (e) => {
-      const type = e.target.value;
-      const uploadSec = document.getElementById('modalMediaUploadSection');
-      if (type === 'none') {
-        uploadSec.style.display = 'none';
-        state.modalDraftMedia = null;
-        updateModalPreview();
-      } else {
-        uploadSec.style.display = 'block';
-        DOM.modalFileInput.accept = type === 'video' ? 'video/*' : 'image/*';
-      }
-    });
-  });
-
-  // Отправка формы модалки нового поста
-  DOM.newPostForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const text = DOM.modalPostText.value.trim();
-    const media = state.modalDraftMedia;
-    const selectedRadioType = document.querySelector('input[name="modalMediaType"]:checked').value;
-
-    if (!text && !media) {
-      DOM.modalFormError.style.display = 'block';
-      return;
-    }
-
-    DOM.modalFormError.style.display = 'none';
-
-    const newPost = {
-      id: 'post_' + Date.now(),
-      type: selectedRadioType === 'none' ? 'none' : (media ? media.type : selectedRadioType),
-      mediaUrl: media ? media.url : null,
-      posterUrl: media && media.type === 'video' ? 'assets/sleepy-dog.jpg' : null,
-      text: text,
-      likes: 0,
-      createdAt: new Date().toISOString(),
-      comments: []
-    };
-
-    state.posts.unshift(newPost);
-    savePostsToStorage();
-
-    // Сброс модалки
-    DOM.newPostForm.reset();
-    state.modalDraftMedia = null;
-    updateModalPreview();
-    closeModal(DOM.newPostModal);
-
-    renderFeed();
-    showToast('Запись добавлена в дневник! 🐾');
-    DOM.feedContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-
-  // Вставка эмодзи в активное текстовое поле
-  document.querySelectorAll('.emoji-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const emoji = btn.dataset.emoji;
-      // Определяем контекст (модалка или инлайн)
-      const targetTextarea = btn.closest('#newPostForm') ? DOM.modalPostText : DOM.inlinePostText;
-
-      const start = targetTextarea.selectionStart;
-      const end = targetTextarea.selectionEnd;
-      const val = targetTextarea.value;
-      targetTextarea.value = val.substring(0, start) + emoji + val.substring(end);
-      targetTextarea.selectionStart = targetTextarea.selectionEnd = start + emoji.length;
-      targetTextarea.focus();
-    });
-  });
-
-  // ==========================================================================
-  // 10. РЕДАКТИРОВАНИЕ ПРОФИЛЯ ПИТОМЦА
+  // 10. РЕДАКТИРОВАНИЕ ПРОФИЛЯ
   // ==========================================================================
 
   DOM.editProfileBtn.addEventListener('click', () => {
@@ -1128,9 +1103,7 @@
 
   DOM.editAvatarUrlInput.addEventListener('input', () => {
     const url = DOM.editAvatarUrlInput.value.trim();
-    if (url) {
-      DOM.editAvatarPreview.src = url;
-    }
+    if (url) DOM.editAvatarPreview.src = url;
   });
 
   DOM.editProfileForm.addEventListener('submit', (e) => {
@@ -1144,68 +1117,15 @@
 
     saveProfileToStorage();
     renderProfile();
-    renderFeed(); // Обновит аватары в постах
+    renderFeed();
     closeModal(DOM.editProfileModal);
-
-    showToast('Профиль Арчи успешно обновлен! ✨');
-  });
-
-  // Модалка "О питомце"
-  DOM.aboutProfileBtn.addEventListener('click', () => {
-    openModal(DOM.aboutProfileModal);
+    showToast('Профиль обновлен! ✨');
   });
 
   // ==========================================================================
-  // 11. ПОИСК В РЕАЛЬНОМ ВРЕМЕНИ И ФИЛЬТРЫ
+  // 11. ФИЛЬТРАЦИЯ И НАВИГАЦИЯ
   // ==========================================================================
 
-  function handleSearch(query) {
-    state.searchQuery = query;
-    if (query.trim()) {
-      DOM.clearSearchBtn.style.display = 'block';
-      DOM.searchFeedbackStrip.style.display = 'flex';
-      DOM.searchFeedbackQuery.textContent = `«${query.trim()}»`;
-    } else {
-      DOM.clearSearchBtn.style.display = 'none';
-      DOM.searchFeedbackStrip.style.display = 'none';
-    }
-    renderFeed();
-  }
-
-  DOM.searchInput.addEventListener('input', (e) => {
-    handleSearch(e.target.value);
-  });
-
-  DOM.clearSearchBtn.addEventListener('click', () => {
-    DOM.searchInput.value = '';
-    handleSearch('');
-    DOM.searchInput.focus();
-  });
-
-  DOM.resetSearchStripBtn.addEventListener('click', () => {
-    DOM.searchInput.value = '';
-    handleSearch('');
-  });
-
-  DOM.emptyStateResetBtn.addEventListener('click', () => {
-    DOM.searchInput.value = '';
-    state.searchQuery = '';
-    state.activeFilter = 'all';
-    DOM.filterTabs.forEach(t => t.classList.toggle('active', t.dataset.filter === 'all'));
-    DOM.searchFeedbackStrip.style.display = 'none';
-    DOM.clearSearchBtn.style.display = 'none';
-    renderFeed();
-  });
-
-  // Мобильный поиск: переключение строки поиска
-  DOM.mobileSearchToggle.addEventListener('click', () => {
-    DOM.searchContainer.classList.toggle('mobile-active');
-    if (DOM.searchContainer.classList.contains('mobile-active')) {
-      DOM.searchInput.focus();
-    }
-  });
-
-  // Переключение вкладок фильтрации (Все, Фото, Видео, Любимые)
   DOM.filterTabs.forEach(tab => {
     tab.addEventListener('click', () => {
       DOM.filterTabs.forEach(t => {
@@ -1219,42 +1139,35 @@
     });
   });
 
-  // Верхняя навигация
   DOM.navLinks.forEach(link => {
     link.addEventListener('click', () => {
       DOM.navLinks.forEach(l => l.classList.remove('active'));
       link.classList.add('active');
 
       const action = link.dataset.action;
-      if (action === 'home') {
-        state.activeFilter = 'all';
-        DOM.filterTabs.forEach(t => t.classList.toggle('active', t.dataset.filter === 'all'));
-        renderFeed();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else if (action === 'gallery') {
-        state.activeFilter = 'photo';
-        DOM.filterTabs.forEach(t => t.classList.toggle('active', t.dataset.filter === 'photo'));
-        renderFeed();
-        DOM.feedContainer.scrollIntoView({ behavior: 'smooth' });
-      } else if (action === 'about') {
-        openModal(DOM.aboutProfileModal);
-      }
+      state.activeFilter = action;
+      DOM.filterTabs.forEach(t => t.classList.toggle('active', t.dataset.filter === action));
+      renderFeed();
+      DOM.feedContainer.scrollIntoView({ behavior: 'smooth' });
     });
   });
 
   DOM.logoLink.addEventListener('click', (e) => {
     e.preventDefault();
     state.activeFilter = 'all';
-    state.searchQuery = '';
-    DOM.searchInput.value = '';
-    DOM.searchFeedbackStrip.style.display = 'none';
     DOM.filterTabs.forEach(t => t.classList.toggle('active', t.dataset.filter === 'all'));
     renderFeed();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
+  DOM.emptyStateResetBtn.addEventListener('click', () => {
+    state.activeFilter = 'all';
+    DOM.filterTabs.forEach(t => t.classList.toggle('active', t.dataset.filter === 'all'));
+    renderFeed();
+  });
+
   // ==========================================================================
-  // 12. ДЕЛЕГИРОВАНИЕ СОБЫТИЙ В ЛЕНТЕ (КЛИКИ ПО КАРТОЧКАМ, ЛАЙКИ, КОММЕНТЫ)
+  // 12. ДЕЛЕГИРОВАНИЕ СОБЫТИЙ В ЛЕНТЕ
   // ==========================================================================
 
   DOM.feedContainer.addEventListener('click', (e) => {
@@ -1262,7 +1175,7 @@
     if (!card) return;
     const postId = card.dataset.postId;
 
-    // 1. Клик по кнопке "🐾 Дай лапу!"
+    // Лайк
     const likeBtn = e.target.closest('[data-action="like-post"]');
     if (likeBtn) {
       e.stopPropagation();
@@ -1270,7 +1183,7 @@
       return;
     }
 
-    // 2. Клик по кнопке "💬 Комментировать"
+    // Комментарии
     const commentsToggleBtn = e.target.closest('[data-action="toggle-comments"]');
     if (commentsToggleBtn) {
       e.stopPropagation();
@@ -1278,7 +1191,7 @@
       return;
     }
 
-    // 3. Клик по кнопке удаления записи
+    // Удаление
     const deleteBtn = e.target.closest('[data-action="delete-post"]');
     if (deleteBtn) {
       e.stopPropagation();
@@ -1286,17 +1199,16 @@
       return;
     }
 
-    // 4. Клик по фото для Lightbox
-    const mediaWrap = e.target.closest('[data-lightbox-src]');
-    if (mediaWrap) {
-      const src = mediaWrap.dataset.lightboxSrc;
-      const caption = mediaWrap.dataset.lightboxCaption || '';
+    // Клик по фото для Lightbox (как в карусели, так и в одиночном фото)
+    const mediaImg = e.target.closest('[data-lightbox-src]');
+    if (mediaImg) {
+      const src = mediaImg.dataset.lightboxSrc;
+      const caption = mediaImg.dataset.lightboxCaption || '';
       openLightbox(src, caption);
       return;
     }
   });
 
-  // Отправка комментария через submit формы внутри карточки
   DOM.feedContainer.addEventListener('submit', (e) => {
     const commentForm = e.target.closest('.comment-form');
     if (commentForm) {
@@ -1307,7 +1219,7 @@
   });
 
   // ==========================================================================
-  // 13. ПОЛНОЭКРАННЫЙ ПРОСМОТРЩИК ФОТО (LIGHTBOX)
+  // 13. ПОЛНОЭКРАННЫЙ LIGHTBOX
   // ==========================================================================
 
   function openLightbox(src, caption) {
@@ -1326,13 +1238,11 @@
 
   DOM.lightboxCloseBtn.addEventListener('click', closeLightbox);
   DOM.lightboxOverlay.addEventListener('click', (e) => {
-    if (e.target === DOM.lightboxOverlay) {
-      closeLightbox();
-    }
+    if (e.target === DOM.lightboxOverlay) closeLightbox();
   });
 
   // ==========================================================================
-  // 14. УПРАВЛЕНИЕ МОДАЛЬНЫМИ ОКНАМИ (MODALS)
+  // 14. МОДАЛКИ
   // ==========================================================================
 
   function openModal(modalEl) {
@@ -1345,18 +1255,6 @@
     document.body.style.overflow = '';
   }
 
-  // Кнопка шапки "+ Добавить" и мобильный FAB
-  DOM.openNewPostModalBtn.addEventListener('click', () => {
-    DOM.modalFormError.style.display = 'none';
-    openModal(DOM.newPostModal);
-  });
-
-  DOM.mobileFabBtn.addEventListener('click', () => {
-    DOM.modalFormError.style.display = 'none';
-    openModal(DOM.newPostModal);
-  });
-
-  // Закрытие модалок по кнопкам [data-close-modal]
   document.querySelectorAll('[data-close-modal]').forEach(btn => {
     btn.addEventListener('click', () => {
       const modalId = btn.dataset.closeModal;
@@ -1365,16 +1263,12 @@
     });
   });
 
-  // Закрытие по клику на фон
   document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
     backdrop.addEventListener('click', (e) => {
-      if (e.target === backdrop) {
-        closeModal(backdrop);
-      }
+      if (e.target === backdrop) closeModal(backdrop);
     });
   });
 
-  // Закрытие по клавише Escape для модалок и Lightbox
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       if (DOM.lightboxOverlay.style.display === 'flex') {
@@ -1382,14 +1276,11 @@
         return;
       }
       document.querySelectorAll('.modal-backdrop').forEach(modal => {
-        if (modal.style.display === 'flex') {
-          closeModal(modal);
-        }
+        if (modal.style.display === 'flex') closeModal(modal);
       });
     }
   });
 
-  // Тень шапки при скролле
   window.addEventListener('scroll', () => {
     if (window.scrollY > 20) {
       DOM.header.classList.add('scrolled');
@@ -1398,7 +1289,7 @@
     }
   }, { passive: true });
 
-  // Сброс демо-данных к начальным 2 постам
+  // Сброс демо-данных
   DOM.resetDemoDataBtn.addEventListener('click', () => {
     if (confirm('Вернуть исходные 2 демо-поста дневника Арчи? Все изменения будут сброшены.')) {
       localStorage.removeItem(STORAGE_KEYS.POSTS);
@@ -1407,12 +1298,12 @@
       loadStateFromStorage();
       renderProfile();
       renderFeed();
-      showToast('Демо-данные успешно восстановлены! 🔄');
+      showToast('Демо-данные восстановлены! 🔄');
     }
   });
 
   // ==========================================================================
-  // 15. ЗАПУСК ПРИЛОЖЕНИЯ
+  // 15. ЗАПУСК
   // ==========================================================================
   function initApp() {
     loadStateFromStorage();
@@ -1420,7 +1311,6 @@
     renderFeed();
   }
 
-  // Запуск после загрузки DOM
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);
   } else {
