@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Дневник Арчи 🐾 | Блог золотистого ретривера</title>
+  <meta name="description" content="Уютный блог золотистого ретривера по имени Арчи. Прогулки, игры, фото и видеохроники счастливой собачьей жизни.">
+  
+  <!-- Favicon with Paw Icon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐾</text></svg>">
+
+  <!-- Google Fonts: Lora (Serif) & Plus Jakarta Sans (Sans-serif) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background Decorative Shapes / Leaves -->
+  <div class="bg-decor-leaf bg-decor-left" aria-hidden="true"></div>
+  <div class="bg-decor-leaf bg-decor-right" aria-hidden="true"></div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#" class="brand-logo" id="logoLink" title="На главную">
+        <span class="logo-paw">🐾</span>
+        <span class="logo-text">Дневник Арчи</span>
+      </a>
+
+      <!-- Search Bar -->
+      <div class="header-search-container" id="searchContainer">
+        <div class="search-input-wrapper">
+          <span class="search-icon" aria-hidden="true">🔍</span>
+          <input 
+            type="search" 
+            id="searchInput" 
+            class="search-input" 
+            placeholder="Поиск по историям..." 
+            aria-label="Поиск по публикациям"
+            autocomplete="off"
+          >
+          <button type="button" id="clearSearchBtn" class="clear-search-btn" title="Очистить поиск" aria-label="Очистить">✕</button>
+        </div>
+      </div>
+
+      <!-- Desktop Nav & Actions -->
+      <nav class="header-nav" aria-label="Основная навигация">
+        <button type="button" class="nav-link active" data-action="home">Главная</button>
+        <button type="button" class="nav-link" data-action="gallery">Галерея</button>
+        <button type="button" class="nav-link" data-action="about">Обо мне</button>
+      </nav>
+
+      <div class="header-actions">
+        <!-- Mobile Search Toggle -->
+        <button type="button" class="icon-btn mobile-search-toggle" id="mobileSearchToggle" title="Поиск" aria-label="Открыть поиск">
+          🔍
+        </button>
+        <!-- Add Post Button -->
+        <button type="button" class="btn btn-primary btn-add-post" id="openNewPostModalBtn">
+          <span class="btn-icon">+</span>
+          <span class="btn-label">Добавить</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container main-content">
+    
+    <!-- Hero Profile Section -->
+    <section class="profile-hero-card" aria-label="Профиль питомца">
+      <div class="profile-avatar-wrap">
+        <img 
+          id="profileAvatarImg" 
+          src="assets/avatar.jpg" 
+          alt="Фотография золотистого ретривера Арчи" 
+          class="profile-avatar"
+          onerror="this.src='https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=500&q=80'"
+        >
+        <span class="avatar-badge" title="Арчи сейчас на связи!">🌿</span>
+      </div>
+
+      <div class="profile-info">
+        <div class="profile-header-row">
+          <h1 class="profile-name" id="profileName">Арчи</h1>
+          <span class="profile-verified" title="Официальный хороший мальчик">Золотистый ретривер ✨</span>
+        </div>
+        
+        <p class="profile-subtitle" id="profileSubtitle">
+          <span id="profileAge">3 года</span> • <span id="profileStatus">Любитель мячиков, долгих прогулок и обнимашек 🦴🌾</span>
+        </p>
+
+        <!-- Live Counters & Badges -->
+        <div class="profile-stats-row">
+          <div class="stat-pill">
+            <strong id="statPostsCount">2</strong>
+            <span>поста</span>
+          </div>
+          <div class="stat-pill stat-pill-highlight">
+            <span class="stat-paw-icon">🐾</span>
+            <strong id="statLikesCount">80</strong>
+            <span>лапок</span>
+          </div>
+          <div class="stat-pill stat-pill-extra">
+            <span>Любимая команда: <strong>«Дай лапу!»</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-actions">
+        <button type="button" class="btn btn-outline" id="editProfileBtn" title="Редактировать профиль">
+          <span class="btn-icon">✏️</span> Редактировать
+        </button>
+        <button type="button" class="btn btn-outline" id="aboutProfileBtn" title="Подробнее об Арчи">
+          <span class="btn-icon">🦴</span> О питомце
+        </button>
+      </div>
+    </section>
+
+    <!-- Inline Quick Post Creator Box -->
+    <section class="quick-creator-card" aria-label="Создание новой публикации">
+      <div class="quick-creator-header">
+        <div class="quick-avatar-mini">
+          <img 
+            id="quickAvatarMini" 
+            src="assets/avatar.jpg" 
+            alt="Арчи"
+            onerror="this.src='https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=200&q=80'"
+          >
+        </div>
+        <div class="quick-input-trigger" id="quickInputTrigger">
+          <textarea 
+            id="inlinePostText" 
+            class="quick-textarea" 
+            placeholder="Что нового, Арчи? ✨ Расскажи свою историю..." 
+            rows="2"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Emoji Quick Toolbar -->
+      <div class="emoji-bar" id="inlineEmojiBar">
+        <span class="emoji-bar-label">Эмодзи:</span>
+        <button type="button" class="emoji-btn" data-emoji="🐾">🐾</button>
+        <button type="button" class="emoji-btn" data-emoji="🦴">🦴</button>
+        <button type="button" class="emoji-btn" data-emoji="🐶">🐶</button>
+        <button type="button" class="emoji-btn" data-emoji="🍂">🍂</button>
+        <button type="button" class="emoji-btn" data-emoji="🌾">🌾</button>
+        <button type="button" class="emoji-btn" data-emoji="🎾">🎾</button>
+        <button type="button" class="emoji-btn" data-emoji="💤">💤</button>
+        <button type="button" class="emoji-btn" data-emoji="❤️">❤️</button>
+        <button type="button" class="emoji-btn" data-emoji="✨">✨</button>
+      </div>
+
+      <!-- Media Preview in Inline Creator (Hidden initially) -->
+      <div class="inline-media-preview-container" id="inlineMediaPreview" style="display: none;">
+        <div class="preview-content-box" id="inlinePreviewContent"></div>
+        <button type="button" class="btn-remove-preview" id="inlineRemoveMediaBtn" title="Удалить прикрепленный файл">✕ Удалить файл</button>
+      </div>
+
+      <!-- Inline Creator Drag & Drop Dropzone (Hidden collapsible) -->
+      <div class="dropzone-box" id="inlineDropzone" style="display: none;">
+        <div class="dropzone-inner">
+          <span class="dropzone-icon">☁️</span>
+          <p class="dropzone-text"><strong>Перетащите фото или видео сюда</strong> или выберите файл</p>
+          <p class="dropzone-hint">Поддерживаются JPG, PNG, WEBP, MP4, WebM до 50 МБ</p>
+          <input type="file" id="inlineFileInput" class="hidden-file-input" accept="image/*,video/*">
+          <div class="dropzone-buttons">
+            <button type="button" class="btn btn-sm btn-outline" id="inlineBrowseBtn">Обзор файлов</button>
+            <span class="or-separator">или</span>
+            <button type="button" class="btn btn-sm btn-ghost" id="inlineUrlToggleBtn">Ввести URL</button>
+          </div>
+          <!-- URL input row -->
+          <div class="url-input-row" id="inlineUrlRow" style="display: none;">
+            <input type="url" id="inlineUrlInput" placeholder="https://example.com/photo-or-video.mp4" class="form-input">
+            <button type="button" class="btn btn-sm btn-secondary" id="inlineApplyUrlBtn">Применить</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Creator Bottom Controls -->
+      <div class="quick-creator-footer">
+        <div class="quick-attach-buttons">
+          <button type="button" class="attach-btn" id="inlineAttachPhotoBtn" title="Прикрепить фото">
+            <span class="attach-icon">📷</span> Фото
+          </button>
+          <button type="button" class="attach-btn" id="inlineAttachVideoBtn" title="Прикрепить видео">
+            <span class="attach-icon">🎥</span> Видео
+          </button>
+          <button type="button" class="attach-btn" id="inlineAttachTextOnlyBtn" title="Очистить медиа">
+            <span class="attach-icon">✏️</span> Текст
+          </button>
+        </div>
+
+        <div class="quick-publish-side">
+          <div class="drag-drop-badge" id="inlineDndHint" title="Нажмите, чтобы открыть загрузку">
+            <span class="dnd-icon">⬆️</span>
+            <span class="dnd-text">Загрузить медиа</span>
+          </div>
+          <button type="button" class="btn btn-primary btn-publish" id="inlinePublishBtn">
+            Опубликовать
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feed Controls: Filters & Search Feedback -->
+    <section class="feed-header-section">
+      <div class="feed-filters-bar" role="tablist" aria-label="Фильтры публикаций">
+        <button type="button" class="filter-tab active" data-filter="all" role="tab" aria-selected="true">
+          Все <span class="filter-count" id="countAll">2</span>
+        </button>
+        <button type="button" class="filter-tab" data-filter="photo" role="tab" aria-selected="false">
+          Только фото 📸 <span class="filter-count" id="countPhoto">1</span>
+        </button>
+        <button type="button" class="filter-tab" data-filter="video" role="tab" aria-selected="false">
+          Только видео 🎥 <span class="filter-count" id="countVideo">1</span>
+        </button>
+        <button type="button" class="filter-tab" data-filter="liked" role="tab" aria-selected="false">
+          Любимые 🐾 <span class="filter-count" id="countLiked">0</span>
+        </button>
+      </div>
+
+      <!-- Search feedback strip -->
+      <div class="search-feedback-strip" id="searchFeedbackStrip" style="display: none;">
+        <span>Результаты поиска по запросу: <strong id="searchFeedbackQuery">""</strong></span>
+        <button type="button" class="btn-link" id="resetSearchStripBtn">Сбросить поиск</button>
+      </div>
+    </section>
+
+    <!-- Feed Section -->
+    <section class="feed-grid-container" id="feedContainer" aria-label="Лента публикаций" aria-live="polite">
+      <!-- Dynamic Post Cards will be rendered here by app.js -->
+    </section>
+
+    <!-- Empty State (When no posts match filter or search) -->
+    <div class="feed-empty-state" id="feedEmptyState" style="display: none;">
+      <div class="empty-icon">🐕🔍</div>
+      <h3 class="empty-title">Ничего не найдено</h3>
+      <p class="empty-desc" id="emptyStateDesc">Арчи еще не успел сделать такую запись или попробуйте изменить параметры поиска.</p>
+      <button type="button" class="btn btn-secondary" id="emptyStateResetBtn">Показать все записи</button>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-col-left">
+        <p class="footer-title">Дневник Арчи 🐾</p>
+        <p class="footer-sub">Скандинавский теплый блог самого доброго золотистого ретривера. Все права защищены хвостиком.</p>
+      </div>
+      <div class="footer-col-right">
+        <button type="button" class="btn btn-ghost btn-sm" id="resetDemoDataBtn" title="Сбросить к исходным 2 демо-постам">
+          🔄 Вернуть демо-данные
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Mobile Floating Action Button (FAB) -->
+  <button type="button" class="mobile-fab" id="mobileFabBtn" title="Создать запись" aria-label="Создать запись">
+    <span>+</span>
+  </button>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- 1. Modal: Создать новую запись -->
+  <div class="modal-backdrop" id="newPostModal" role="dialog" aria-modal="true" aria-labelledby="newPostModalTitle" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title" id="newPostModalTitle">Новая запись в дневник 🐾</h2>
+        <button type="button" class="modal-close-btn" data-close-modal="newPostModal" aria-label="Закрыть окно">✕</button>
+      </div>
+      
+      <form id="newPostForm" class="modal-form" novalidate>
+        <!-- Story text -->
+        <div class="form-group">
+          <label for="modalPostText" class="form-label">История / описание:</label>
+          <textarea 
+            id="modalPostText" 
+            class="form-textarea" 
+            rows="4" 
+            placeholder="О чем сегодня думал или что делал Арчи? Расскажи подробности..."
+          ></textarea>
+          
+          <!-- Emoji Picker inside Modal -->
+          <div class="modal-emoji-bar">
+            <span class="emoji-label">Добавить:</span>
+            <button type="button" class="emoji-btn" data-emoji="🐾">🐾</button>
+            <button type="button" class="emoji-btn" data-emoji="🦴">🦴</button>
+            <button type="button" class="emoji-btn" data-emoji="🐶">🐶</button>
+            <button type="button" class="emoji-btn" data-emoji="🍂">🍂</button>
+            <button type="button" class="emoji-btn" data-emoji="🌾">🌾</button>
+            <button type="button" class="emoji-btn" data-emoji="🎾">🎾</button>
+            <button type="button" class="emoji-btn" data-emoji="💤">💤</button>
+            <button type="button" class="emoji-btn" data-emoji="❤️">❤️</button>
+            <button type="button" class="emoji-btn" data-emoji="✨">✨</button>
+          </div>
+        </div>
+
+        <!-- Media Type Selector -->
+        <div class="form-group">
+          <label class="form-label">Тип медиа:</label>
+          <div class="media-type-selector">
+            <label class="radio-pill">
+              <input type="radio" name="modalMediaType" value="photo" checked>
+              <span>📷 Фотография</span>
+            </label>
+            <label class="radio-pill">
+              <input type="radio" name="modalMediaType" value="video">
+              <span>🎥 Видеоролик</span>
+            </label>
+            <label class="radio-pill">
+              <input type="radio" name="modalMediaType" value="none">
+              <span>📝 Только текст</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Modal Upload Dropzone -->
+        <div class="form-group" id="modalMediaUploadSection">
+          <label class="form-label">Файл медиа:</label>
+          
+          <!-- Dropzone -->
+          <div class="dropzone-box" id="modalDropzone">
+            <div class="dropzone-inner">
+              <span class="dropzone-icon">📸</span>
+              <p class="dropzone-text"><strong>Перетащите файл сюда</strong> или выберите на устройстве</p>
+              <p class="dropzone-hint">Изображения JPG, PNG, WEBP или видео MP4, WebM</p>
+              <input type="file" id="modalFileInput" class="hidden-file-input" accept="image/*,video/*">
+              <button type="button" class="btn btn-sm btn-outline" id="modalBrowseBtn">Выбрать файл</button>
+            </div>
+          </div>
+
+          <!-- Alternative Media URL -->
+          <div class="url-input-block">
+            <div class="url-label-toggle">
+              <span>Или укажите прямую ссылку на медиа:</span>
+            </div>
+            <div class="url-input-row">
+              <input type="url" id="modalUrlInput" class="form-input" placeholder="https://images.unsplash.com/... или .mp4">
+              <button type="button" class="btn btn-sm btn-secondary" id="modalApplyUrlBtn">Загрузить</button>
+            </div>
+          </div>
+
+          <!-- Modal Media Preview -->
+          <div class="modal-preview-box" id="modalMediaPreview" style="display: none;">
+            <div class="preview-render-area" id="modalPreviewRender"></div>
+            <button type="button" class="btn-remove-preview" id="modalRemoveMediaBtn">✕ Удалить медиа</button>
+          </div>
+        </div>
+
+        <!-- Error notice banner -->
+        <div class="form-error-banner" id="modalFormError" style="display: none;">
+          Пожалуйста, напишите текст истории или прикрепите фото/видео.
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close-modal="newPostModal">Отмена</button>
+          <button type="submit" class="btn btn-primary" id="modalSubmitPostBtn">Опубликовать в дневник</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Modal: Редактировать профиль -->
+  <div class="modal-backdrop" id="editProfileModal" role="dialog" aria-modal="true" aria-labelledby="editProfileTitle" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title" id="editProfileTitle">Редактировать профиль Арчи ✏️</h2>
+        <button type="button" class="modal-close-btn" data-close-modal="editProfileModal" aria-label="Закрыть">✕</button>
+      </div>
+
+      <form id="editProfileForm" class="modal-form">
+        <!-- Avatar Change -->
+        <div class="form-group avatar-edit-group">
+          <label class="form-label">Аватарка питомца:</label>
+          <div class="avatar-edit-flex">
+            <img id="editAvatarPreview" src="assets/avatar.jpg" alt="Превью" class="avatar-preview-img">
+            <div class="avatar-edit-controls">
+              <input type="file" id="editAvatarFileInput" class="hidden-file-input" accept="image/*">
+              <button type="button" class="btn btn-sm btn-outline" id="editAvatarBrowseBtn">Загрузить фото</button>
+              <div class="avatar-url-sub">
+                <input type="url" id="editAvatarUrlInput" class="form-input form-input-sm" placeholder="Или ссылка на аватар (URL)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="editDogName" class="form-label">Имя питомца:</label>
+          <input type="text" id="editDogName" class="form-input" required maxlength="30" value="Арчи">
+        </div>
+
+        <div class="form-group">
+          <label for="editDogBreed" class="form-label">Порода:</label>
+          <input type="text" id="editDogBreed" class="form-input" required maxlength="40" value="Золотистый ретривер">
+        </div>
+
+        <div class="form-group">
+          <label for="editDogAge" class="form-label">Возраст:</label>
+          <input type="text" id="editDogAge" class="form-input" required maxlength="20" value="3 года">
+        </div>
+
+        <div class="form-group">
+          <label for="editDogStatus" class="form-label">Статус / описание:</label>
+          <textarea id="editDogStatus" class="form-textarea" rows="3" required maxlength="200">Любитель мячиков, долгих прогулок и обнимашек 🦴🌾</textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close-modal="editProfileModal">Отмена</button>
+          <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. Modal: О питомце (Паспорт Арчи) -->
+  <div class="modal-backdrop" id="aboutProfileModal" role="dialog" aria-modal="true" aria-labelledby="aboutProfileTitle" style="display: none;">
+    <div class="modal-dialog modal-dialog-passport">
+      <div class="modal-header">
+        <h2 class="modal-title" id="aboutProfileTitle">Паспорт счастливой собаки 🐾</h2>
+        <button type="button" class="modal-close-btn" data-close-modal="aboutProfileModal" aria-label="Закрыть">✕</button>
+      </div>
+
+      <div class="passport-card-content">
+        <div class="passport-hero">
+          <div class="passport-badge-icon">🐶</div>
+          <h3 class="passport-dog-name">Сэр Арчибальд (Арчи)</h3>
+          <p class="passport-breed-tag">Порода: Золотистый ретривер • Окрас: Теплый золотистый мед</p>
+        </div>
+
+        <div class="passport-grid">
+          <div class="passport-item">
+            <span class="passport-key">🎂 День рождения:</span>
+            <span class="passport-val">12 мая (по знаку зодиака — Телец)</span>
+          </div>
+          <div class="passport-item">
+            <span class="passport-key">🌾 Характер:</span>
+            <span class="passport-val">Неисправимый оптимист, добряк, обожает гостей</span>
+          </div>
+          <div class="passport-item">
+            <span class="passport-key">🍖 Любимые вкусняшки:</span>
+            <span class="passport-val">Сушеное говяжье легкое, яблочные дольки и кусочек сыра</span>
+          </div>
+          <div class="passport-item">
+            <span class="passport-key">🎾 Любимые игрушки:</span>
+            <span class="passport-val">Оранжевый пищащий мячик и толстый канат для перетягивания</span>
+          </div>
+          <div class="passport-item">
+            <span class="passport-key">🐕 Лучшие друзья:</span>
+            <span class="passport-val">Корги Оскар из соседнего двора и домашний кот Барсик (мирный нейтралитет)</span>
+          </div>
+          <div class="passport-item">
+            <span class="passport-key">✨ Главное правило:</span>
+            <span class="passport-val">«Кто пришел домой — того надо встретить с самым большим тапком в зубах!»</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-close-modal="aboutProfileModal">Почесать за ушком 🐾</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Modal: Подтверждение удаления публикации -->
+  <div class="modal-backdrop" id="deleteConfirmModal" role="dialog" aria-modal="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-sm">
+      <div class="modal-header">
+        <h2 class="modal-title">Удалить запись? 🗑️</h2>
+        <button type="button" class="modal-close-btn" data-close-modal="deleteConfirmModal" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="confirm-text">Вы уверены, что хотите удалить эту публикацию из дневника Арчи? Воспоминание будет стерто.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-close-modal="deleteConfirmModal">Отмена</button>
+        <button type="button" class="btn btn-danger" id="confirmDeletePostBtn">Да, удалить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Lightbox: Полноэкранный просмотр фотографий -->
+  <div class="lightbox-overlay" id="lightboxOverlay" role="dialog" aria-modal="true" aria-label="Просмотр фотографии" style="display: none;">
+    <button type="button" class="lightbox-close-btn" id="lightboxCloseBtn" title="Закрыть (Esc)" aria-label="Закрыть">✕</button>
+    <div class="lightbox-content-wrap" id="lightboxContentWrap">
+      <img src="" alt="Фотография в полном размере" id="lightboxImg" class="lightbox-image">
+      <div class="lightbox-caption-bar" id="lightboxCaption"></div>
+    </div>
+  </div>
+
+  <!-- Floating Toast Notifications -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- Core JavaScript -->
+  <script src="app.js"></script>
+</body>
+</html>
