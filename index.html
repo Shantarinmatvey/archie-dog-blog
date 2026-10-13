@@ -24,10 +24,16 @@
   <!-- Header -->
   <header class="site-header">
     <div class="container header-inner">
-      <a href="#" class="brand-logo" id="logoLink" title="На главную">
-        <span class="logo-paw">🐾</span>
-        <span class="logo-text">Дневник Арчи</span>
-      </a>
+      <div class="brand-group">
+        <a href="#" class="brand-logo" id="logoLink" title="На главную">
+          <span class="logo-paw">🐾</span>
+          <span class="logo-text">Дневник Арчи</span>
+        </a>
+        <!-- Индикатор облачной синхронизации в реальном времени -->
+        <span class="cloud-sync-badge" id="cloudSyncBadge" title="Облачная база данных подключена">
+          <span class="cloud-dot"></span> ☁️ Онлайн
+        </span>
+      </div>
 
       <!-- Desktop Nav -->
       <nav class="header-nav" aria-label="Основная навигация">
@@ -188,7 +194,7 @@
     <div class="container footer-inner">
       <div class="footer-col-left">
         <p class="footer-title">Дневник Арчи 🐾</p>
-        <p class="footer-sub">Скандинавский теплый блог самого доброго золотистого ретривера.</p>
+        <p class="footer-sub">Скандинавский теплый блог самого доброго золотистого ретривера. Синхронизируется между всеми устройствами в реальном времени через Firebase Cloud.</p>
       </div>
       <div class="footer-col-right">
         <button type="button" class="btn btn-ghost btn-sm" id="resetDemoDataBtn" title="Сбросить к исходным 2 демо-постам">
@@ -260,7 +266,7 @@
         <button type="button" class="modal-close-btn" data-close-modal="deleteConfirmModal" aria-label="Закрыть">✕</button>
       </div>
       <div class="modal-body">
-        <p class="confirm-text">Вы уверены, что хотите удалить эту публикацию из дневника Арчи?</p>
+        <p class="confirm-text">Вы уверены, что хотите удалить эту публикацию из дневника Арчи? Запись будет удалена на всех устройствах.</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-ghost" data-close-modal="deleteConfirmModal">Отмена</button>

@@ -1,28 +1,29 @@
 /**
  * ============================================================================
- * ДНЕВНИК АРЧИ 🐾 — ПОЛНОФУНКЦИОНАЛЬНЫЙ SPA СКРИПТ (v2 Лаконичный дизайн)
+ * ДНЕВНИК АРЧИ 🐾 — SPA С ОБЛАЧНОЙ СИНХРОНИЗАЦИЕЙ (FIREBASE REALTIME DB)
  * ============================================================================
- * - Чистый интерфейс: только текстовое поле + плюсик для прикрепления медиафайлов
- * - Мультизагрузка: поддержка нескольких фото и видео в одной публикации
- * - Инстаграм-карусель: перелистывание стрелками, свайпом, точками и счетчиком 1/N
- * - Автопауза видео при переключении слайдов карусели
- * - Кастомный видеоплеер с полосой прогресса
- * - Полноэкранный Lightbox для фото
- * - Хранение в localStorage с восстановлением демо-данных
+ * - База данных: https://blog-site-50c99-default-rtdb.firebaseio.com/
+ * - Мгновенная синхронизация между смартфоном, ПК и любыми устройствами
+ * - Автоматический перенос локальных постов, созданных на телефоне, в облако
+ * - Оптимизация изображений через Canvas (сжатие до 1200px для быстрой загрузки)
+ * - Мультизагрузка фото/видео и Инстаграм-карусель
+ * - Автоматическое обновление данных при переключении вкладок
  * ============================================================================
  */
 
 (function () {
   'use strict';
 
-  // --- КЛЮЧИ ХРАНИЛИЩА LOCALSTORAGE ---
+  // --- НАСТРОЙКИ ОБЛАЧНОЙ БАЗЫ ДАННЫХ (FIREBASE) ---
+  const FIREBASE_BASE_URL = 'https://blog-site-50c99-default-rtdb.firebaseio.com';
+
   const STORAGE_KEYS = {
-    POSTS: 'archie_blog_posts_v2',
-    PROFILE: 'archie_blog_profile_v2',
+    POSTS_CACHE: 'archie_blog_posts_cache_v2',
+    PROFILE_CACHE: 'archie_blog_profile_cache_v2',
     LIKED_POSTS: 'archie_blog_liked_ids_v2'
   };
 
-  // --- ДЕМО-ДАННЫЕ ПО УМОЛЧАНИЮ (СТРОГО 2 ЗАПИСИ) ---
+  // Демо-данные по умолчанию
   const DEFAULT_POSTS = [
     {
       id: 'demo-post-1',
@@ -35,13 +36,13 @@
       ],
       text: 'Первый осенний забег! 🍂 Нашли в парке самый большой пушистый след осени и пересчитали все палки.',
       likes: 42,
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      createdAt: '2026-10-13T18:00:00.000Z',
       comments: [
         {
           id: 'c1-1',
           author: 'Алина',
           text: 'Какой счастливый нос! 😍',
-          createdAt: new Date(Date.now() - 105 * 60 * 1000).toISOString()
+          createdAt: '2026-10-13T18:30:00.000Z'
         }
       ]
     },
@@ -57,13 +58,13 @@
       ],
       text: 'Сонный субботний потягуш 💤 После длинной прогулки диван официально оккупирован.',
       likes: 38,
-      createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+      createdAt: '2026-10-13T15:00:00.000Z',
       comments: [
         {
           id: 'c2-1',
           author: 'Макс',
           text: 'Заслужил отдых на 100% 💤',
-          createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
+          createdAt: '2026-10-13T16:00:00.000Z'
         }
       ]
     }
@@ -77,23 +78,25 @@
     avatarUrl: 'assets/avatar.jpg'
   };
 
-  // --- СОСТОЯНИЕ ПРИЛОЖЕНИЯ (STATE) ---
+  // --- СОСТОЯНИЕ (STATE) ---
   const state = {
     posts: [],
     profile: { ...DEFAULT_PROFILE },
     likedPostIds: new Set(),
     activeFilter: 'all', // 'all' | 'photo' | 'video' | 'liked'
-    // Список прикрепленных к новому посту медиафайлов: Array<{ type: 'photo'|'video', url: string, name?: string }>
     attachedMediaList: [],
-    postToDeleteId: null
+    postToDeleteId: null,
+    isSyncing: false,
+    lastSyncHash: ''
   };
 
-  // --- DOM ССЫЛКИ ---
+  // --- DOM ЭЛЕМЕНТЫ ---
   const DOM = {
     header: document.querySelector('.site-header'),
     logoLink: document.getElementById('logoLink'),
     navLinks: document.querySelectorAll('.nav-link'),
     openNewPostFocusBtn: document.getElementById('openNewPostFocusBtn'),
+    cloudSyncBadge: document.getElementById('cloudSyncBadge'),
 
     // Hero Profile
     profileAvatarImg: document.getElementById('profileAvatarImg'),
@@ -125,7 +128,7 @@
     emptyStateDesc: document.getElementById('emptyStateDesc'),
     emptyStateResetBtn: document.getElementById('emptyStateResetBtn'),
 
-    // Edit Profile Modal
+    // Modals
     editProfileModal: document.getElementById('editProfileModal'),
     editProfileForm: document.getElementById('editProfileForm'),
     editAvatarPreview: document.getElementById('editAvatarPreview'),
@@ -137,7 +140,6 @@
     editDogAge: document.getElementById('editDogAge'),
     editDogStatus: document.getElementById('editDogStatus'),
 
-    // Delete Modal & Lightbox & Toast
     deleteConfirmModal: document.getElementById('deleteConfirmModal'),
     confirmDeletePostBtn: document.getElementById('confirmDeletePostBtn'),
     lightboxOverlay: document.getElementById('lightboxOverlay'),
@@ -149,11 +151,10 @@
   };
 
   // ==========================================================================
-  // 1. ИНИЦИАЛИЗАЦИЯ И ХРАНИЛИЩЕ LOCALSTORAGE
+  // 1. ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ (FIREBASE REST API)
   // ==========================================================================
 
   function normalizePostMedia(post) {
-    // Поддержка обратной совместимости: если в посте старый формат mediaUrl
     if (!post.media || !Array.isArray(post.media)) {
       if (post.mediaUrl) {
         post.media = [
@@ -171,66 +172,188 @@
     return post;
   }
 
-  function loadStateFromStorage() {
+  // Загрузка постов из Firebase
+  async function fetchCloudPosts() {
     try {
-      const storedPosts = localStorage.getItem(STORAGE_KEYS.POSTS);
-      if (storedPosts) {
-        const parsed = JSON.parse(storedPosts);
-        state.posts = parsed.map(normalizePostMedia);
-      } else {
-        state.posts = JSON.parse(JSON.stringify(DEFAULT_POSTS));
-        savePostsToStorage();
+      const res = await fetch(`${FIREBASE_BASE_URL}/posts.json`, { cache: 'no-cache' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!data) return null;
+
+      let posts = [];
+      if (Array.isArray(data)) {
+        posts = data.filter(Boolean);
+      } else if (typeof data === 'object') {
+        posts = Object.values(data);
       }
 
-      const storedProfile = localStorage.getItem(STORAGE_KEYS.PROFILE);
-      if (storedProfile) {
-        state.profile = Object.assign({}, DEFAULT_PROFILE, JSON.parse(storedProfile));
-      } else {
-        state.profile = { ...DEFAULT_PROFILE };
-        saveProfileToStorage();
-      }
-
-      const storedLiked = localStorage.getItem(STORAGE_KEYS.LIKED_POSTS);
-      if (storedLiked) {
-        state.likedPostIds = new Set(JSON.parse(storedLiked));
-      } else {
-        state.likedPostIds = new Set();
-      }
-    } catch (e) {
-      console.warn('Ошибка чтения localStorage:', e);
-      state.posts = JSON.parse(JSON.stringify(DEFAULT_POSTS));
-      state.profile = { ...DEFAULT_PROFILE };
-      state.likedPostIds = new Set();
+      return posts.map(normalizePostMedia);
+    } catch (err) {
+      console.warn('Ошибка связи с Firebase:', err);
+      return null;
     }
   }
 
-  function savePostsToStorage() {
+  // Сохранение постов в Firebase
+  async function saveCloudPosts(posts) {
     try {
-      localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(state.posts));
-    } catch (e) {
-      console.error('Ошибка записи постов в localStorage:', e);
-      showToast('⚠️ Память браузера переполнена. Попробуйте прикрепить меньше медиа.');
+      // Сохраняем локально в кэш
+      localStorage.setItem(STORAGE_KEYS.POSTS_CACHE, JSON.stringify(posts));
+
+      const res = await fetch(`${FIREBASE_BASE_URL}/posts.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(posts)
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return true;
+    } catch (err) {
+      console.error('Ошибка сохранения постов в Firebase:', err);
+      return false;
     }
   }
 
-  function saveProfileToStorage() {
+  // Загрузка профиля из Firebase
+  async function fetchCloudProfile() {
     try {
-      localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(state.profile));
-    } catch (e) {
-      console.error('Ошибка записи профиля:', e);
+      const res = await fetch(`${FIREBASE_BASE_URL}/profile.json`, { cache: 'no-cache' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data ? Object.assign({}, DEFAULT_PROFILE, data) : null;
+    } catch (err) {
+      return null;
     }
   }
 
-  function saveLikedToStorage() {
+  // Сохранение профиля в Firebase
+  async function saveCloudProfile(profile) {
     try {
-      localStorage.setItem(STORAGE_KEYS.LIKED_POSTS, JSON.stringify(Array.from(state.likedPostIds)));
-    } catch (e) {
-      console.error('Ошибка записи лайков:', e);
+      localStorage.setItem(STORAGE_KEYS.PROFILE_CACHE, JSON.stringify(profile));
+      await fetch(`${FIREBASE_BASE_URL}/profile.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile)
+      });
+    } catch (err) {
+      console.error('Ошибка сохранения профиля в Firebase:', err);
+    }
+  }
+
+  // Интеллектуальное слияние: если на телефоне был локальный пост, автоматически отправляем его в облако!
+  async function syncDataWithCloud(isInitial = false) {
+    if (state.isSyncing) return;
+    state.isSyncing = true;
+
+    try {
+      const cloudPosts = await fetchCloudPosts();
+      const cloudProfile = await fetchCloudProfile();
+
+      // Проверяем локальные посты из всех предыдущих версий ключей (чтобы не потерять пост со смартфона!)
+      let localPosts = [];
+      const cached = localStorage.getItem(STORAGE_KEYS.POSTS_CACHE) || 
+                     localStorage.getItem('archie_blog_posts_v2') || 
+                     localStorage.getItem('archie_blog_posts_v1');
+      if (cached) {
+        try {
+          localPosts = JSON.parse(cached).map(normalizePostMedia);
+        } catch (e) {}
+      }
+
+      let mergedPosts = cloudPosts;
+
+      // Если в облаке еще ничего нет — сохраняем локальные или демо
+      if (!mergedPosts || mergedPosts.length === 0) {
+        mergedPosts = localPosts.length > 0 ? localPosts : JSON.parse(JSON.stringify(DEFAULT_POSTS));
+        await saveCloudPosts(mergedPosts);
+      } else if (localPosts.length > 0) {
+        // Проверяем: есть ли в памяти телефона пост, которого еще нет в облаке?
+        const cloudIds = new Set(mergedPosts.map(p => p.id));
+        const unsyncedLocalPosts = localPosts.filter(p => !cloudIds.has(p.id));
+
+        if (unsyncedLocalPosts.length > 0) {
+          // Добавляем локальные посты в облако!
+          mergedPosts = [...unsyncedLocalPosts, ...mergedPosts];
+          await saveCloudPosts(mergedPosts);
+          showToast(`☁️ Синхронизировано! Пост со смартфона добавлен в облако (${unsyncedLocalPosts.length})`, '✨');
+        }
+      }
+
+      if (cloudProfile) {
+        state.profile = cloudProfile;
+      }
+
+      // Проверяем, изменились ли данные
+      const currentHash = JSON.stringify(mergedPosts.map(p => ({ id: p.id, likes: p.likes, c: (p.comments || []).length })));
+      if (currentHash !== state.lastSyncHash || isInitial) {
+        state.posts = mergedPosts;
+        state.lastSyncHash = currentHash;
+        renderProfile();
+        renderFeed();
+      }
+
+      updateSyncBadge(true);
+    } catch (err) {
+      console.warn('Синхронизация временно недоступна, работаем с кэшем:', err);
+      updateSyncBadge(false);
+    } finally {
+      state.isSyncing = false;
+    }
+  }
+
+  function updateSyncBadge(isOnline) {
+    if (!DOM.cloudSyncBadge) return;
+    if (isOnline) {
+      DOM.cloudSyncBadge.innerHTML = '<span class="cloud-dot"></span> ☁️ Онлайн';
+      DOM.cloudSyncBadge.style.color = '#2E7D32';
+      DOM.cloudSyncBadge.title = 'Облачная база данных подключена (все устройства синхронизированы)';
+    } else {
+      DOM.cloudSyncBadge.innerHTML = '<span class="cloud-dot" style="background:#FFA000"></span> ☁️ Офлайн';
+      DOM.cloudSyncBadge.style.color = '#C27B35';
+      DOM.cloudSyncBadge.title = 'Работа с локальным кэшем';
     }
   }
 
   // ==========================================================================
-  // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+  // 2. ОПТИМИЗАЦИЯ ИЗОБРАЖЕНИЙ (CANVAS COMPRESSOR ДЛЯ СМАРТФОНОВ)
+  // ==========================================================================
+
+  function optimizeImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.82) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Сжатый компактный JPEG (100–250 КБ вместо 10 МБ с камеры смартфона)
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        };
+        img.onerror = () => reject(new Error('Ошибка загрузки фото'));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error('Ошибка чтения файла'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ==========================================================================
+  // 3. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И ОТОБРАЖЕНИЕ
   // ==========================================================================
 
   function formatDate(isoString) {
@@ -278,12 +401,8 @@
       toast.style.transform = 'translateY(10px)';
       toast.style.transition = 'all 0.3s ease';
       setTimeout(() => toast.remove(), 300);
-    }, 2800);
+    }, 3000);
   }
-
-  // ==========================================================================
-  // 3. ОБНОВЛЕНИЕ UI ПРОФИЛЯ И СЧЕТЧИКОВ
-  // ==========================================================================
 
   function renderProfile() {
     DOM.profileName.textContent = state.profile.name;
@@ -307,7 +426,6 @@
       DOM.statLikesCount.textContent = totalLikes;
     }
 
-    // Количество по фильтрам
     const photoCount = state.posts.filter(p => (p.media || []).some(m => m.type === 'photo')).length;
     const videoCount = state.posts.filter(p => (p.media || []).some(m => m.type === 'video')).length;
     const likedCount = state.posts.filter(p => state.likedPostIds.has(p.id)).length;
@@ -319,40 +437,51 @@
   }
 
   // ==========================================================================
-  // 4. МУЛЬТИЗАГРУЗКА МЕДИАФАЙЛОВ В КРЕАТОРЕ (ТОЛЬКО ТЕКСТ + ПЛЮСИК)
+  // 4. МУЛЬТИЗАГРУЗКА МЕДИАФАЙЛОВ В КРЕАТОРЕ
   // ==========================================================================
 
-  // Клик по кнопке с плюсиком открывает диалог выбора файлов
   DOM.btnAttachMedia.addEventListener('click', () => {
     DOM.mediaFilesInput.click();
   });
 
-  DOM.mediaFilesInput.addEventListener('change', () => {
+  DOM.mediaFilesInput.addEventListener('change', async () => {
     const files = Array.from(DOM.mediaFilesInput.files || []);
     if (!files.length) return;
 
-    let loadedCount = 0;
-    files.forEach(file => {
-      if (file.size > 50 * 1024 * 1024) {
-        showToast(`⚠️ Файл ${file.name} превышает 50 МБ`);
-        return;
+    for (const file of files) {
+      const isVideo = file.type.startsWith('video/') || file.name.match(/\.(mp4|webm|mov)$/i);
+
+      if (isVideo) {
+        if (file.size > 20 * 1024 * 1024) {
+          showToast(`⚠️ Видео ${file.name} больше 20 МБ`, '🎥');
+          continue;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          state.attachedMediaList.push({
+            type: 'video',
+            url: e.target.result,
+            name: file.name
+          });
+          renderAttachedMediaTray();
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // Фото сжимаем через Canvas для молниеносной синхронизации по сети
+        try {
+          const optimizedDataUrl = await optimizeImage(file);
+          state.attachedMediaList.push({
+            type: 'photo',
+            url: optimizedDataUrl,
+            name: file.name
+          });
+          renderAttachedMediaTray();
+        } catch (err) {
+          showToast(`⚠️ Не удалось обработать ${file.name}`);
+        }
       }
+    }
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const isVideo = file.type.startsWith('video/') || file.name.match(/\.(mp4|webm|mov)$/i);
-        state.attachedMediaList.push({
-          type: isVideo ? 'video' : 'photo',
-          url: e.target.result,
-          name: file.name
-        });
-        loadedCount++;
-        renderAttachedMediaTray();
-      };
-      reader.readAsDataURL(file);
-    });
-
-    // Сбрасываем инпут чтобы можно было добавить те же файлы снова
     DOM.mediaFilesInput.value = '';
   });
 
@@ -389,7 +518,6 @@
         `;
       }
 
-      // Кнопка удаления отдельного файла
       thumbWrap.querySelector('.thumb-remove-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         state.attachedMediaList.splice(index, 1);
@@ -400,16 +528,19 @@
     });
   }
 
-  // Публикация записи
-  DOM.inlinePublishBtn.addEventListener('click', () => {
+  // Публикация нового поста с мгновенной отправкой в Firebase
+  DOM.inlinePublishBtn.addEventListener('click', async () => {
     const text = DOM.inlinePostText.value.trim();
     const media = state.attachedMediaList;
 
     if (!text && media.length === 0) {
-      showToast('⚠️ Напишите текст истории или добавьте фото/видео через «+»');
+      showToast('⚠️ Напишите текст или добавьте фото/видео через «+»');
       DOM.inlinePostText.focus();
       return;
     }
+
+    DOM.inlinePublishBtn.disabled = true;
+    DOM.inlinePublishBtn.textContent = 'Сохранение...';
 
     const newPost = {
       id: 'post_' + Date.now(),
@@ -421,20 +552,28 @@
     };
 
     state.posts.unshift(newPost);
-    savePostsToStorage();
 
-    // Сброс полей
+    // Сброс полей креатора
     DOM.inlinePostText.value = '';
     state.attachedMediaList = [];
     renderAttachedMediaTray();
-
     renderFeed();
-    showToast('История опубликована в дневнике Арчи! 🐾🎉');
+
+    // Сохраняем в Firebase
+    const success = await saveCloudPosts(state.posts);
+
+    DOM.inlinePublishBtn.disabled = false;
+    DOM.inlinePublishBtn.textContent = 'Опубликовать';
+
+    if (success) {
+      showToast('История опубликована и доступна на всех устройствах! ☁️🐾🎉');
+    } else {
+      showToast('История сохранена локально. Проверьте интернет-соединение.');
+    }
 
     DOM.feedContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  // Кнопка шапки "+ Написать" на десктопе фокусирует поле ввода
   if (DOM.openNewPostFocusBtn) {
     DOM.openNewPostFocusBtn.addEventListener('click', () => {
       DOM.inlinePostText.focus();
@@ -443,7 +582,7 @@
   }
 
   // ==========================================================================
-  // 5. ОТРИСОВКА ЛЕНТЫ ПУБЛИКАЦИЙ (FEED)
+  // 5. ОТРИСОВКА ЛЕНТЫ ПУБЛИКАЦИЙ
   // ==========================================================================
 
   function getFilteredPosts() {
@@ -493,7 +632,6 @@
     });
   }
 
-  // Создание элемента карточки
   function createPostCardElement(post) {
     const card = document.createElement('article');
     card.className = 'post-card';
@@ -503,7 +641,6 @@
     const commentsCount = (post.comments || []).length;
     const mediaList = post.media || [];
 
-    // Определяем ярлык типа
     let typeLabel = '📝 Заметка';
     const hasPhotos = mediaList.some(m => m.type === 'photo');
     const hasVideos = mediaList.some(m => m.type === 'video');
@@ -515,7 +652,6 @@
       typeLabel = mediaList.length > 1 ? `📸 Фото (${mediaList.length})` : '📸 Фото';
     }
 
-    // Генерация медиа-блока: если > 1 элемента — Инстаграм-карусель!
     let mediaHtml = '';
     if (mediaList.length > 1) {
       mediaHtml = createCarouselHtml(post.id, mediaList, post.text);
@@ -523,7 +659,6 @@
       mediaHtml = createSingleMediaHtml(post.id, mediaList[0], post.text);
     }
 
-    // Комментарии
     const commentsListHtml = (post.comments || []).map(c => `
       <div class="comment-item">
         <div class="comment-author-avatar">${escapeHtml(c.author ? c.author.charAt(0).toUpperCase() : '🐾')}</div>
@@ -593,7 +728,6 @@
       </div>
     `;
 
-    // Инициализация карусели или одиночного видео
     if (mediaList.length > 1) {
       initPostCarousel(card.querySelector('.post-carousel-container'));
     } else if (mediaList.length === 1 && mediaList[0].type === 'video') {
@@ -605,7 +739,7 @@
   }
 
   // ==========================================================================
-  // 6. ИНСТАГРАМ-КАРУСЕЛЬ (ПЕРЕЛИСТЫВАНИЕ МЕДИАФАЙЛОВ)
+  // 6. ИНСТАГРАМ-КАРУСЕЛЬ МЕДИА В ПОСТАХ
   // ==========================================================================
 
   function createCarouselHtml(postId, mediaList, caption) {
@@ -692,7 +826,6 @@
 
     let currentIndex = 0;
 
-    // Инициализация видеоплееров внутри слайдов
     slides.forEach(slide => {
       const player = slide.querySelector('.custom-video-player');
       if (player) initCustomVideoPlayer(player);
@@ -718,16 +851,10 @@
       pauseAllVideos();
       track.style.transform = `translateX(-${currentIndex * 100}%)`;
 
-      // Счетчик 1 / N
-      if (counterBadge) {
-        counterBadge.textContent = `${currentIndex + 1} / ${total}`;
-      }
-
-      // Стрелки навигации
+      if (counterBadge) counterBadge.textContent = `${currentIndex + 1} / ${total}`;
       if (prevBtn) prevBtn.style.display = currentIndex === 0 ? 'none' : 'flex';
       if (nextBtn) nextBtn.style.display = currentIndex === total - 1 ? 'none' : 'flex';
 
-      // Точки
       dots.forEach((dot, i) => {
         dot.classList.toggle('active', i === currentIndex);
       });
@@ -753,7 +880,7 @@
       });
     }
 
-    // Поддержка сенсорных свайпов (Mobile Touch Swipe)
+    // Touch Swipe
     let touchStartX = 0;
     let touchEndX = 0;
 
@@ -763,26 +890,19 @@
 
     container.addEventListener('touchend', (e) => {
       touchEndX = e.changedTouches[0].screenX;
-      handleSwipe();
-    }, { passive: true });
-
-    function handleSwipe() {
       const diff = touchEndX - touchStartX;
       if (Math.abs(diff) > 40) {
         if (diff < 0 && currentIndex < total - 1) {
-          // Свайп влево -> следующий
           currentIndex++;
           updateCarousel();
         } else if (diff > 0 && currentIndex > 0) {
-          // Свайп вправо -> предыдущий
           currentIndex--;
           updateCarousel();
         }
       }
-    }
+    }, { passive: true });
   }
 
-  // Одиночное медиа (1 фото или 1 видео)
   function createSingleMediaHtml(postId, media, caption) {
     if (media.type === 'video') {
       return `
@@ -943,7 +1063,7 @@
   }
 
   // ==========================================================================
-  // 8. РЕАКЦИИ («ДАЙ ЛАПУ!») И КОММЕНТАРИИ
+  // 8. РЕАКЦИИ И КОММЕНТАРИИ
   // ==========================================================================
 
   function triggerPawBurst(buttonElement) {
@@ -963,7 +1083,7 @@
     });
   }
 
-  function handlePostLike(postId, buttonElement) {
+  async function handlePostLike(postId, buttonElement) {
     const post = state.posts.find(p => p.id === postId);
     if (!post) return;
 
@@ -985,9 +1105,11 @@
     }
 
     buttonElement.querySelector('.like-counter').textContent = `(${post.likes})`;
-    savePostsToStorage();
-    saveLikedToStorage();
+    localStorage.setItem(STORAGE_KEYS.LIKED_POSTS, JSON.stringify(Array.from(state.likedPostIds)));
     updateCounters();
+
+    // Синхронизируем обновленные лайки с Firebase
+    await saveCloudPosts(state.posts);
   }
 
   function toggleCommentsDrawer(postId, card) {
@@ -1000,7 +1122,7 @@
     }
   }
 
-  function handleAddComment(postId, formElement) {
+  async function handleAddComment(postId, formElement) {
     const input = formElement.querySelector('.comment-input');
     const commentText = input.value.trim();
     if (!commentText) return;
@@ -1009,7 +1131,7 @@
     if (!post) return;
 
     if (!post.comments) post.comments = [];
-    const authorName = localStorage.getItem('archie_commenter_name') || 'Гость блога';
+    const authorName = localStorage.getItem('archie_commenter_name') || 'Друг Арчи';
 
     const newComment = {
       id: 'c_' + Date.now(),
@@ -1019,7 +1141,6 @@
     };
 
     post.comments.push(newComment);
-    savePostsToStorage();
 
     const drawer = formElement.closest('.comments-drawer');
     const list = drawer.querySelector('.comments-list');
@@ -1045,6 +1166,9 @@
     if (toggleBtn) toggleBtn.textContent = `Комментировать (${post.comments.length})`;
 
     showToast('Комментарий добавлен! 💬');
+
+    // Сохраняем в Firebase
+    await saveCloudPosts(state.posts);
   }
 
   // ==========================================================================
@@ -1056,17 +1180,17 @@
     openModal(DOM.deleteConfirmModal);
   }
 
-  DOM.confirmDeletePostBtn.addEventListener('click', () => {
+  DOM.confirmDeletePostBtn.addEventListener('click', async () => {
     if (!state.postToDeleteId) return;
 
     const index = state.posts.findIndex(p => p.id === state.postToDeleteId);
     if (index !== -1) {
       state.posts.splice(index, 1);
       state.likedPostIds.delete(state.postToDeleteId);
-      savePostsToStorage();
-      saveLikedToStorage();
+      localStorage.setItem(STORAGE_KEYS.LIKED_POSTS, JSON.stringify(Array.from(state.likedPostIds)));
       renderFeed();
-      showToast('Запись удалена', '🗑️');
+      showToast('Запись удалена на всех устройствах', '🗑️');
+      await saveCloudPosts(state.posts);
     }
 
     state.postToDeleteId = null;
@@ -1091,13 +1215,14 @@
     DOM.editAvatarFileInput.click();
   });
 
-  DOM.editAvatarFileInput.addEventListener('change', () => {
+  DOM.editAvatarFileInput.addEventListener('change', async () => {
     if (DOM.editAvatarFileInput.files && DOM.editAvatarFileInput.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        DOM.editAvatarPreview.src = e.target.result;
-      };
-      reader.readAsDataURL(DOM.editAvatarFileInput.files[0]);
+      try {
+        const compressedAvatar = await optimizeImage(DOM.editAvatarFileInput.files[0], 500, 500, 0.85);
+        DOM.editAvatarPreview.src = compressedAvatar;
+      } catch (e) {
+        showToast('⚠️ Ошибка обработки фото аватара');
+      }
     }
   });
 
@@ -1106,7 +1231,7 @@
     if (url) DOM.editAvatarPreview.src = url;
   });
 
-  DOM.editProfileForm.addEventListener('submit', (e) => {
+  DOM.editProfileForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     state.profile.name = DOM.editDogName.value.trim() || 'Арчи';
@@ -1115,11 +1240,12 @@
     state.profile.status = DOM.editDogStatus.value.trim() || 'Любитель мячиков 🦴';
     state.profile.avatarUrl = DOM.editAvatarPreview.src;
 
-    saveProfileToStorage();
     renderProfile();
     renderFeed();
     closeModal(DOM.editProfileModal);
-    showToast('Профиль обновлен! ✨');
+    showToast('Профиль обновлен в облаке! ✨');
+
+    await saveCloudProfile(state.profile);
   });
 
   // ==========================================================================
@@ -1175,7 +1301,6 @@
     if (!card) return;
     const postId = card.dataset.postId;
 
-    // Лайк
     const likeBtn = e.target.closest('[data-action="like-post"]');
     if (likeBtn) {
       e.stopPropagation();
@@ -1183,7 +1308,6 @@
       return;
     }
 
-    // Комментарии
     const commentsToggleBtn = e.target.closest('[data-action="toggle-comments"]');
     if (commentsToggleBtn) {
       e.stopPropagation();
@@ -1191,7 +1315,6 @@
       return;
     }
 
-    // Удаление
     const deleteBtn = e.target.closest('[data-action="delete-post"]');
     if (deleteBtn) {
       e.stopPropagation();
@@ -1199,7 +1322,6 @@
       return;
     }
 
-    // Клик по фото для Lightbox (как в карусели, так и в одиночном фото)
     const mediaImg = e.target.closest('[data-lightbox-src]');
     if (mediaImg) {
       const src = mediaImg.dataset.lightboxSrc;
@@ -1219,7 +1341,7 @@
   });
 
   // ==========================================================================
-  // 13. ПОЛНОЭКРАННЫЙ LIGHTBOX
+  // 13. ПОЛНОЭКРАННЫЙ LIGHTBOX & МОДАЛКИ
   // ==========================================================================
 
   function openLightbox(src, caption) {
@@ -1240,10 +1362,6 @@
   DOM.lightboxOverlay.addEventListener('click', (e) => {
     if (e.target === DOM.lightboxOverlay) closeLightbox();
   });
-
-  // ==========================================================================
-  // 14. МОДАЛКИ
-  // ==========================================================================
 
   function openModal(modalEl) {
     modalEl.style.display = 'flex';
@@ -1289,26 +1407,60 @@
     }
   }, { passive: true });
 
-  // Сброс демо-данных
-  DOM.resetDemoDataBtn.addEventListener('click', () => {
-    if (confirm('Вернуть исходные 2 демо-поста дневника Арчи? Все изменения будут сброшены.')) {
-      localStorage.removeItem(STORAGE_KEYS.POSTS);
+  // Сброс к демо-данным в облаке
+  DOM.resetDemoDataBtn.addEventListener('click', async () => {
+    if (confirm('Сбросить блог Арчи к исходным 2 демо-постам в облаке? Все добавленные посты будут удалены.')) {
+      state.posts = JSON.parse(JSON.stringify(DEFAULT_POSTS));
+      state.profile = { ...DEFAULT_PROFILE };
+      state.likedPostIds.clear();
       localStorage.removeItem(STORAGE_KEYS.LIKED_POSTS);
-      localStorage.removeItem(STORAGE_KEYS.PROFILE);
-      loadStateFromStorage();
+
       renderProfile();
       renderFeed();
-      showToast('Демо-данные восстановлены! 🔄');
+      showToast('Демо-данные восстановлены в облаке! 🔄');
+
+      await saveCloudPosts(state.posts);
+      await saveCloudProfile(state.profile);
     }
   });
 
   // ==========================================================================
-  // 15. ЗАПУСК
+  // 14. ЗАПУСК И ФОНОВОЕ АВТООБНОВЛЕНИЕ
   // ==========================================================================
-  function initApp() {
-    loadStateFromStorage();
-    renderProfile();
-    renderFeed();
+
+  async function initApp() {
+    // 1. Быстро загружаем кэш для мгновенной отрисовки без задержек
+    const cachedLiked = localStorage.getItem(STORAGE_KEYS.LIKED_POSTS);
+    if (cachedLiked) {
+      try { state.likedPostIds = new Set(JSON.parse(cachedLiked)); } catch (e) {}
+    }
+
+    const cachedPosts = localStorage.getItem(STORAGE_KEYS.POSTS_CACHE);
+    if (cachedPosts) {
+      try {
+        state.posts = JSON.parse(cachedPosts).map(normalizePostMedia);
+        renderProfile();
+        renderFeed();
+      } catch (e) {}
+    }
+
+    // 2. Синхронизируем с Firebase в реальном времени
+    await syncDataWithCloud(true);
+
+    // 3. Фоновое обновление: каждые 8 секунд опрашиваем облако для мгновенного появления новых постов
+    setInterval(() => {
+      syncDataWithCloud(false);
+    }, 8000);
+
+    // 4. При возвращении на вкладку браузера сразу проверяем обновления
+    window.addEventListener('focus', () => {
+      syncDataWithCloud(false);
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        syncDataWithCloud(false);
+      }
+    });
   }
 
   if (document.readyState === 'loading') {
