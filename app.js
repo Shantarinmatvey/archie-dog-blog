@@ -401,16 +401,21 @@
     const totalPosts = state.posts.length;
     const totalLikes = state.posts.reduce((sum, p) => sum + (p.likes || 0), 0);
 
-    DOM.statPostsCount.textContent = totalPosts;
-    if (totalLikes >= 1000) {
-      DOM.statLikesCount.textContent = (totalLikes / 1000).toFixed(1).replace('.0', '') + 'k';
-    } else {
-      DOM.statLikesCount.textContent = totalLikes;
+    if (DOM.statPostsCount) DOM.statPostsCount.textContent = totalPosts;
+    if (DOM.statLikesCount) {
+      if (totalLikes >= 1000) {
+        DOM.statLikesCount.textContent = (totalLikes / 1000).toFixed(1).replace('.0', '') + 'k';
+      } else {
+        DOM.statLikesCount.textContent = totalLikes;
+      }
     }
 
-    DOM.countAll.textContent = totalPosts;
-    DOM.countPhoto.textContent = photoCount;
-    DOM.countVideo.textContent = videoCount;
+    const photoCount = state.posts.filter(p => (p.media || []).some(m => m.type === 'photo')).length;
+    const videoCount = state.posts.filter(p => (p.media || []).some(m => m.type === 'video')).length;
+
+    if (DOM.countAll) DOM.countAll.textContent = totalPosts;
+    if (DOM.countPhoto) DOM.countPhoto.textContent = photoCount;
+    if (DOM.countVideo) DOM.countVideo.textContent = videoCount;
   }
 
   // ==========================================================================
@@ -519,36 +524,41 @@
     DOM.inlinePublishBtn.disabled = true;
     DOM.inlinePublishBtn.textContent = 'Сохранение...';
 
-    const newPost = {
-      id: 'post_' + Date.now(),
-      media: [...media],
-      text: text,
-      likes: 0,
-      createdAt: new Date().toISOString(),
-      comments: []
-    };
+    try {
+      const newPost = {
+        id: 'post_' + Date.now(),
+        media: [...media],
+        text: text,
+        likes: 0,
+        createdAt: new Date().toISOString(),
+        comments: []
+      };
 
-    state.posts.unshift(newPost);
+      state.posts.unshift(newPost);
 
-    // Сброс полей креатора
-    DOM.inlinePostText.value = '';
-    state.attachedMediaList = [];
-    renderAttachedMediaTray();
-    renderFeed();
+      // Сброс полей креатора
+      DOM.inlinePostText.value = '';
+      state.attachedMediaList = [];
+      renderAttachedMediaTray();
+      renderFeed();
 
-    // Сохраняем в Firebase
-    const success = await saveCloudPosts(state.posts);
+      // Сохраняем в Firebase
+      const success = await saveCloudPosts(state.posts);
 
-    DOM.inlinePublishBtn.disabled = false;
-    DOM.inlinePublishBtn.textContent = 'Опубликовать';
+      if (success) {
+        showToast('История опубликована и доступна на всех устройствах! ☁️🐾🎉');
+      } else {
+        showToast('История сохранена в кэш. Проверьте интернет-соединение.');
+      }
 
-    if (success) {
-      showToast('История опубликована и доступна на всех устройствах! ☁️🐾🎉');
-    } else {
-      showToast('История сохранена локально. Проверьте интернет-соединение.');
+      DOM.feedContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      console.error('Ошибка при публикации:', err);
+      showToast('⚠️ Произошла ошибка при публикации');
+    } finally {
+      DOM.inlinePublishBtn.disabled = false;
+      DOM.inlinePublishBtn.textContent = 'Опубликовать';
     }
-
-    DOM.feedContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   if (DOM.openNewPostFocusBtn) {
