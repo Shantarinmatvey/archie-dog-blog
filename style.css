@@ -1642,7 +1642,11 @@ body {
   }
 
   .brand-logo {
-    font-size: 1.2rem;
+    font-size: 1.12rem;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* СТРОГО: Убираем плюсик на мобильной версии сверху */

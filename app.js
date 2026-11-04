@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * ДНЕВНИК АРЧИ 🐾 — SPA С ОБЛАЧНОЙ СИНХРОНИЗАЦИЕЙ (FIREBASE REALTIME DB)
+ * РЭДЖИ ЗОЛОТОЕ СЕРДЦЕ 🐾 — SPA С ОБЛАЧНОЙ СИНХРОНИЗАЦИЕЙ (FIREBASE REALTIME DB)
  * ============================================================================
  * - База данных: https://blog-site-50c99-default-rtdb.firebaseio.com/
  * - Мгновенная синхронизация между смартфоном, ПК и любыми устройствами
@@ -18,63 +18,209 @@
   const FIREBASE_BASE_URL = 'https://blog-site-50c99-default-rtdb.firebaseio.com';
 
   const STORAGE_KEYS = {
-    POSTS_CACHE: 'archie_blog_posts_cache_v2',
-    PROFILE_CACHE: 'archie_blog_profile_cache_v2',
-    LIKED_POSTS: 'archie_blog_liked_ids_v2'
+    POSTS_CACHE: 'reggie_blog_posts_cache_v4',
+    PROFILE_CACHE: 'reggie_blog_profile_cache_v4',
+    LIKED_POSTS: 'reggie_blog_liked_ids_v4'
   };
 
-  // Демо-данные по умолчанию
+  // Посты по умолчанию (Рэджи Золотое Сердце)
   const DEFAULT_POSTS = [
     {
-      id: 'demo-post-1',
+      id: 'reggie-post-01',
       media: [
-        {
-          type: 'photo',
-          url: 'assets/autumn-dog.jpg',
-          fallbackUrl: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=1000&q=80'
-        }
+        { type: 'photo', url: 'assets/reggie/reggie-snow.jpg' }
       ],
-      text: 'Первый осенний забег! 🍂 Нашли в парке самый большой пушистый след осени и пересчитали все палки.',
-      likes: 42,
-      createdAt: '2026-10-13T18:00:00.000Z',
+      text: 'Официально заявляю: свежий снег на вкус — 10 из 10! ❄️🐾 Проинспектировал первый сугроб, зарылся носом до самого дна и собрал коллекцию идеальных снежинок прямо на усах. Зима, я готов к сугробам!',
+      likes: 48,
+      createdAt: '2026-11-04T16:00:00.000Z',
       comments: [
         {
-          id: 'c1-1',
-          author: 'Алина',
-          text: 'Какой счастливый нос! 😍',
-          createdAt: '2026-10-13T18:30:00.000Z'
+          id: 'c1',
+          author: 'Мама Рэджи',
+          text: 'Снежный медвежонок! Зато домой пришел самый довольный 💛',
+          createdAt: '2026-11-04T16:45:00.000Z'
         }
       ]
     },
     {
-      id: 'demo-post-2',
+      id: 'reggie-post-02',
       media: [
-        {
-          type: 'video',
-          url: 'assets/archie-video.webm',
-          fallbackUrl: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/3/38/Dog_wagging_tail.webm/Dog_wagging_tail.webm.480p.vp9.webm',
-          posterUrl: 'assets/sleepy-dog.jpg'
-        }
+        { type: 'photo', url: 'assets/reggie/reggie-portrait.jpg' }
       ],
-      text: 'Сонный субботний потягуш 💤 После длинной прогулки диван официально оккупирован.',
-      likes: 38,
-      createdAt: '2026-10-13T15:00:00.000Z',
+      text: 'Тот самый фирменный взгляд, когда услышал шуршание пакета с сыром за три комнаты от кухни 🧀✨ Говорят, золотистые ретриверы умеют улыбаться глазами. Ну правда же, как можно отказать этому взгляду?',
+      likes: 64,
+      createdAt: '2026-11-02T13:20:00.000Z',
       comments: [
         {
-          id: 'c2-1',
-          author: 'Макс',
-          text: 'Заслужил отдых на 100% 💤',
-          createdAt: '2026-10-13T16:00:00.000Z'
+          id: 'c2',
+          author: 'Артём',
+          text: 'Голливудская собачья улыбка! Красавец 😍',
+          createdAt: '2026-11-02T14:10:00.000Z'
+        }
+      ]
+    },
+    {
+      id: 'reggie-post-03',
+      media: [
+        { type: 'photo', url: 'assets/reggie/reggie-car-copilot.jpg' },
+        { type: 'photo', url: 'assets/reggie/reggie-car-sunlight.jpg' },
+        { type: 'photo', url: 'assets/reggie/reggie-car-sleepy.jpg' }
+      ],
+      text: 'Хроники автопутешествий Рэджи 🚗💨 Листайте карусель:\n1️⃣ Главный штурман контролирует маршрут строго между сиденьями.\n2️⃣ Ловлю тёплые лучи солнца и кайфую от скорости.\n3️⃣ Полный собачий дзен и релакс в гамаке — когда укачало под любимую музыку.',
+      likes: 82,
+      createdAt: '2026-10-26T11:15:00.000Z',
+      comments: [
+        {
+          id: 'c3',
+          author: 'Папа',
+          text: 'Лучший попутчик во всех дорожных приключениях 🚙🐾',
+          createdAt: '2026-10-26T12:00:00.000Z'
+        }
+      ]
+    },
+    {
+      id: 'reggie-post-04',
+      media: [
+        { type: 'photo', url: 'assets/reggie/reggie-blue-hood.jpg' }
+      ],
+      text: 'Сказали, на улице осенний ветер, поэтому экипировали по последнему слову собачьей моды 🧢💙 Теперь я похож то ли на космонавта, то ли на стильного сибирского хаски. Зато уши в тепле и комфорте!',
+      likes: 53,
+      createdAt: '2026-10-18T17:40:00.000Z',
+      comments: [
+        {
+          id: 'c4',
+          author: 'Оля',
+          text: 'Боже, этот взгляд из-под капюшона просто покорил! 😂🥰',
+          createdAt: '2026-10-18T18:15:00.000Z'
+        }
+      ]
+    },
+    {
+      id: 'reggie-post-05',
+      media: [
+        { type: 'photo', url: 'assets/reggie/reggie-window.jpg' }
+      ],
+      text: 'Минутка собачьей философии у вечернего окна 🪟🌙 Подбородок в надёжной руке Человека, за стеклом зажигаются городские огни, а дома пахнет ужином и уютом. Золотое сердце бьётся в ритме спокойствия.',
+      likes: 77,
+      createdAt: '2026-10-10T19:25:00.000Z',
+      comments: [
+        {
+          id: 'c5',
+          author: 'Лена',
+          text: 'Сколько нежности и безграничной преданности в одном кадре... ❤️',
+          createdAt: '2026-10-10T20:00:00.000Z'
+        }
+      ]
+    },
+    {
+      id: 'reggie-post-06',
+      media: [
+        { type: 'photo', url: 'assets/reggie/reggie-birthday.jpg' }
+      ],
+      text: 'Мне исполнилось 2 года! 🎂🎉 Самый вкусный праздничный торт с нашей совместной фотографией и кучей сердечек. Два года бесконечных игр, погонь за бабочками, искренней любви и счастливых виляний хвостом!',
+      likes: 95,
+      createdAt: '2026-09-30T15:00:00.000Z',
+      comments: [
+        {
+          id: 'c6',
+          author: 'Семья Рэджи',
+          text: 'С Днём Рождения, наш золотой мальчик! Будь самым здоровым и счастливым 🥳🐾',
+          createdAt: '2026-09-30T15:40:00.000Z'
+        }
+      ]
+    },
+    {
+      id: 'reggie-post-07',
+      media: [
+        { type: 'photo', url: 'assets/reggie/reggie-beavers.jpg' }
+      ],
+      text: 'Провёл важные дипломатические переговоры с местными бобрами у лесного ручья 🪵🦫 Подошёл на цыпочках, осторожно обнюхал — пахнут сосной, ведут себя подозрительно неподвижно. Проверка пройдена, территория под контролем!',
+      likes: 58,
+      createdAt: '2026-09-15T13:30:00.000Z',
+      comments: [
+        {
+          id: 'c7',
+          author: 'Денис',
+          text: 'Рэджи насторожился, но хвостом повилял на всякий случай 😆',
+          createdAt: '2026-09-15T14:15:00.000Z'
+        }
+      ]
+    },
+    {
+      id: 'reggie-post-08',
+      media: [
+        { type: 'photo', url: 'assets/reggie/reggie-bears.jpg' }
+      ],
+      text: 'Ночная сказка в парке ✨🐻 Встретили целое семейство светящихся белых медведей! Решил не лаять, а гордо сесть рядом для фото — показать, кто здесь самый дружелюбный великан с золотым сердцем.',
+      likes: 71,
+      createdAt: '2026-08-28T21:45:00.000Z',
+      comments: [
+        {
+          id: 'c8',
+          author: 'Катя',
+          text: 'Какая волшебная атмосфера! Рэджи светится ярче любых гирлянд ✨',
+          createdAt: '2026-08-28T22:20:00.000Z'
+        }
+      ]
+    },
+    {
+      id: 'reggie-post-09',
+      media: [
+        { type: 'photo', url: 'assets/reggie/reggie-forest.jpg' }
+      ],
+      text: 'Летняя экспедиция в сосновый бор 🌲🌾 Солнце, птичьи трели, аромат клевера и мой любимый Человек рядом. Набегался так, что язык еле помещается во рту — вот оно, абсолютное собачье счастье!',
+      likes: 89,
+      createdAt: '2026-08-10T10:45:00.000Z',
+      comments: [
+        {
+          id: 'c9',
+          author: 'Влад',
+          text: 'Замечательный кадр! Тепло и душевно 🌿🐕',
+          createdAt: '2026-08-10T11:30:00.000Z'
+        }
+      ]
+    },
+    {
+      id: 'reggie-post-10',
+      media: [
+        { type: 'photo', url: 'assets/reggie/reggie-twilight.jpg' }
+      ],
+      text: 'Вечерний час тишины 🌅 Розовый закат, прохладная трава и мой стильный ошейник. Люблю после активных догонялок просто лечь на поляне и слушать, как засыпает вечерний парк.',
+      likes: 62,
+      createdAt: '2026-07-22T21:10:00.000Z',
+      comments: [
+        {
+          id: 'c10',
+          author: 'Ирина',
+          text: 'Какой статный красавец на фоне вечернего неба! 🐾',
+          createdAt: '2026-07-22T21:50:00.000Z'
+        }
+      ]
+    },
+    {
+      id: 'reggie-post-11',
+      media: [
+        { type: 'photo', url: 'assets/reggie/reggie-walk.jpg' }
+      ],
+      text: 'Бодрый утренний шаг! ☀️🐾 Уши назад, хвост трубой, поводок натянут ровно настолько, чтобы успевать исследовать каждый встречный куст. Всем пушистого, бодрого и радостного дня!',
+      likes: 56,
+      createdAt: '2026-07-05T09:20:00.000Z',
+      comments: [
+        {
+          id: 'c11',
+          author: 'Соседи по парку',
+          text: 'Всегда заряжаемся вашей утренней энергией! Доброго дня, Рэджи!',
+          createdAt: '2026-07-05T10:05:00.000Z'
         }
       ]
     }
   ];
 
   const DEFAULT_PROFILE = {
-    name: 'Арчи',
+    name: 'Рэджи',
     breed: 'Золотистый ретривер',
-    age: '3 года',
-    status: 'Любитель мячиков, долгих прогулок и обнимашек 🦴🌾',
+    age: '2 года',
+    status: 'Золотое сердце, любитель автопутешествий, снежных сугробов и обнимашек 🦴🌾💛',
     avatarUrl: 'assets/avatar.jpg'
   };
 
@@ -304,11 +450,9 @@
       const cloudPosts = await fetchCloudPosts();
       const cloudProfile = await fetchCloudProfile();
 
-      // Проверяем локальные посты из всех предыдущих версий ключей (чтобы не потерять пост со смартфона!)
+      // Проверяем локальный кэш
       let localPosts = [];
-      const cached = localStorage.getItem(STORAGE_KEYS.POSTS_CACHE) || 
-                     localStorage.getItem('archie_blog_posts_v2') || 
-                     localStorage.getItem('archie_blog_posts_v1');
+      const cached = localStorage.getItem(STORAGE_KEYS.POSTS_CACHE);
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
@@ -714,7 +858,7 @@
         <div class="comment-author-avatar">${escapeHtml(c.author ? c.author.charAt(0).toUpperCase() : '🐾')}</div>
         <div class="comment-bubble">
           <div class="comment-author-row">
-            <span class="comment-author-name">${escapeHtml(c.author || 'Друг Арчи')}</span>
+            <span class="comment-author-name">${escapeHtml(c.author || 'Друг Рэджи')}</span>
             <span class="comment-time">${formatDate(c.createdAt)}</span>
           </div>
           <div class="comment-text">${escapeHtml(c.text)}</div>
@@ -1009,7 +1153,7 @@
       <div class="post-media-wrap" data-lightbox-src="${escapeHtml(media.url)}" data-lightbox-caption="${escapeHtml(caption)}">
         <img 
           src="${escapeHtml(media.url)}" 
-          alt="Фотография Арчи" 
+          alt="Фотография Рэджи" 
           class="post-photo-img" 
           loading="lazy"
           onerror="if(this.src!=='${media.fallbackUrl || ''}') this.src='${media.fallbackUrl || ''}';"
@@ -1171,7 +1315,7 @@
       buttonElement.classList.add('liked');
       buttonElement.querySelector('.like-btn-text').textContent = 'Лапа дана!';
       triggerPawBurst(buttonElement);
-      showToast('Арчи завилял хвостиком! Спасибо за лапку 🐶✨');
+      showToast('Рэджи завилял хвостиком! Спасибо за лапку 🐶✨');
     }
 
     buttonElement.querySelector('.like-counter').textContent = `(${post.likes})`;
@@ -1201,7 +1345,7 @@
     if (!post) return;
 
     if (!post.comments) post.comments = [];
-    const authorName = localStorage.getItem('archie_commenter_name') || 'Друг Арчи';
+    const authorName = localStorage.getItem('reggie_commenter_name') || 'Друг Рэджи';
 
     const newComment = {
       id: 'c_' + Date.now(),
@@ -1304,10 +1448,10 @@
   DOM.editProfileForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    state.profile.name = DOM.editDogName.value.trim() || 'Арчи';
+    state.profile.name = DOM.editDogName.value.trim() || 'Рэджи';
     state.profile.breed = DOM.editDogBreed.value.trim() || 'Золотистый ретривер';
-    state.profile.age = DOM.editDogAge.value.trim() || '3 года';
-    state.profile.status = DOM.editDogStatus.value.trim() || 'Любитель мячиков 🦴';
+    state.profile.age = DOM.editDogAge.value.trim() || '2 года';
+    state.profile.status = DOM.editDogStatus.value.trim() || 'Золотое сердце, любитель автопутешествий, снежных сугробов и обнимашек 🦴🌾💛';
     state.profile.avatarUrl = DOM.editAvatarPreview.src;
 
     renderProfile();
@@ -1479,7 +1623,7 @@
 
   // Сброс к демо-данным в облаке
   DOM.resetDemoDataBtn.addEventListener('click', async () => {
-    if (confirm('Сбросить блог Арчи к исходным 2 демо-постам в облаке? Все добавленные посты будут удалены.')) {
+    if (confirm('Сбросить блог Рэджи к исходным фото в облаке? Все добавленные посты будут удалены.')) {
       state.posts = JSON.parse(JSON.stringify(DEFAULT_POSTS));
       state.profile = { ...DEFAULT_PROFILE };
       state.likedPostIds.clear();
@@ -1487,7 +1631,7 @@
 
       renderProfile();
       renderFeed();
-      showToast('Демо-данные восстановлены в облаке! 🔄');
+      showToast('Истории Рэджи восстановлены в облаке! 🔄');
 
       await saveCloudPosts(state.posts);
       await saveCloudProfile(state.profile);

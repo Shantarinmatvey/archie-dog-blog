@@ -6,8 +6,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Дневник Арчи 🐾 | Блог золотистого ретривера</title>
-  <meta name="description" content="Уютный блог золотистого ретривера по имени Арчи. Прогулки, игры, фото и видеохроники счастливой собачьей жизни.">
+  <title>Рэджи Золотое Сердце 🐾 | Блог золотистого ретривера</title>
+  <meta name="description" content="Уютный блог золотистого ретривера по имени Рэджи. Добрые истории, автопутешествия, фотохроники и тепло золотого сердца.">
   
   <!-- Favicon with Paw Icon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐾</text></svg>">
@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v=20261014_03">
+  <link rel="stylesheet" href="style.css?v=20261104_reggie">
 </head>
 <body>
   <!-- Background Decorative Shapes / Warm Ambient -->
@@ -29,7 +29,7 @@
     <div class="container header-inner">
       <a href="#" class="brand-logo" id="logoLink" title="На главную">
         <span class="logo-paw">🐾</span>
-        <span class="logo-text">Дневник Арчи</span>
+        <span class="logo-text">Рэджи Золотое Сердце</span>
       </a>
 
       <!-- Desktop Nav -->
@@ -58,32 +58,32 @@
         <img 
           id="profileAvatarImg" 
           src="assets/avatar.jpg" 
-          alt="Фотография золотистого ретривера Арчи" 
+          alt="Фотография золотистого ретривера Рэджи" 
           class="profile-avatar"
-          onerror="this.src='https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=500&q=80'"
+          onerror="this.src='assets/avatar.jpg'"
         >
-        <span class="avatar-badge" title="Арчи на связи!">🌿</span>
+        <span class="avatar-badge" title="Рэджи на связи!">🌿</span>
       </div>
 
       <div class="profile-info">
         <div class="profile-header-row">
-          <h1 class="profile-name" id="profileName">Арчи</h1>
-          <span class="profile-verified">Золотистый ретривер ✨</span>
+          <h1 class="profile-name" id="profileName">Рэджи</h1>
+          <span class="profile-verified">Золотое Сердце ✨</span>
         </div>
         
         <p class="profile-subtitle" id="profileSubtitle">
-          <span id="profileAge">3 года</span> • <span id="profileStatus">Любитель мячиков, долгих прогулок и обнимашек 🦴🌾</span>
+          <span id="profileAge">2 года</span> • <span id="profileStatus">Любитель автопутешествий, снежных сугробов и бесконечных обнимашек 🦴🌾💛</span>
         </p>
 
         <!-- Live Counters -->
         <div class="profile-stats-row">
           <div class="stat-pill">
-            <strong id="statPostsCount">2</strong>
-            <span>поста</span>
+            <strong id="statPostsCount">11</strong>
+            <span>постов</span>
           </div>
           <div class="stat-pill stat-pill-highlight">
             <span class="stat-paw-icon">🐾</span>
-            <strong id="statLikesCount">80</strong>
+            <strong id="statLikesCount">715</strong>
             <span>лапок</span>
           </div>
         </div>
@@ -103,15 +103,15 @@
           <img 
             id="quickAvatarMini" 
             src="assets/avatar.jpg" 
-            alt="Арчи"
-            onerror="this.src='https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=200&q=80'"
+            alt="Рэджи"
+            onerror="this.src='assets/avatar.jpg'"
           >
         </div>
         <div class="quick-input-area">
           <textarea 
             id="inlinePostText" 
             class="quick-textarea" 
-            placeholder="Что нового, Арчи? Расскажи свою историю..." 
+            placeholder="Что нового, Рэджи? Расскажи свою историю..." 
             rows="2"
           ></textarea>
 
@@ -156,13 +156,13 @@
     <section class="feed-header-section">
       <div class="feed-filters-bar" role="tablist" aria-label="Фильтры публикаций">
         <button type="button" class="filter-tab active" data-filter="all" role="tab" aria-selected="true">
-          Все <span class="filter-count" id="countAll">2</span>
+          Все <span class="filter-count" id="countAll">11</span>
         </button>
         <button type="button" class="filter-tab" data-filter="photo" role="tab" aria-selected="false">
-          Только фото 📸 <span class="filter-count" id="countPhoto">1</span>
+          Только фото 📸 <span class="filter-count" id="countPhoto">11</span>
         </button>
         <button type="button" class="filter-tab" data-filter="video" role="tab" aria-selected="false">
-          Только видео 🎥 <span class="filter-count" id="countVideo">1</span>
+          Только видео 🎥 <span class="filter-count" id="countVideo">0</span>
         </button>
       </div>
     </section>
@@ -176,7 +176,7 @@
     <div class="feed-empty-state" id="feedEmptyState" style="display: none;">
       <div class="empty-icon">🐕</div>
       <h3 class="empty-title">Записей пока нет</h3>
-      <p class="empty-desc" id="emptyStateDesc">Арчи еще не поделился такой историей. Попробуйте выбрать другой фильтр.</p>
+      <p class="empty-desc" id="emptyStateDesc">Рэджи еще не поделился такой историей. Попробуйте выбрать другой фильтр.</p>
       <button type="button" class="btn btn-secondary" id="emptyStateResetBtn">Показать все записи</button>
     </div>
 
@@ -186,12 +186,12 @@
   <footer class="site-footer">
     <div class="container footer-inner">
       <div class="footer-col-left">
-        <p class="footer-title">Дневник Арчи 🐾</p>
-        <p class="footer-sub">Скандинавский теплый блог самого доброго золотистого ретривера. Синхронизируется между всеми устройствами в реальном времени через Firebase Cloud.</p>
+        <p class="footer-title">Рэджи Золотое Сердце 🐾</p>
+        <p class="footer-sub">Скандинавский теплый блог самого доброго золотистого ретривера Рэджи. Синхронизируется между всеми устройствами в реальном времени через Firebase Cloud.</p>
       </div>
       <div class="footer-col-right">
-        <button type="button" class="btn btn-ghost btn-sm" id="resetDemoDataBtn" title="Сбросить к исходным 2 демо-постам">
-          🔄 Вернуть демо-данные
+        <button type="button" class="btn btn-ghost btn-sm" id="resetDemoDataBtn" title="Сбросить к исходным историям Рэджи">
+          🔄 Вернуть истории Рэджи
         </button>
       </div>
     </div>
@@ -203,7 +203,7 @@
   <div class="modal-backdrop" id="editProfileModal" role="dialog" aria-modal="true" aria-labelledby="editProfileTitle" style="display: none;">
     <div class="modal-dialog">
       <div class="modal-header">
-        <h2 class="modal-title" id="editProfileTitle">Редактировать профиль Арчи ✏️</h2>
+        <h2 class="modal-title" id="editProfileTitle">Редактировать профиль Рэджи ✏️</h2>
         <button type="button" class="modal-close-btn" data-close-modal="editProfileModal" aria-label="Закрыть">✕</button>
       </div>
 
@@ -225,7 +225,7 @@
 
         <div class="form-group">
           <label for="editDogName" class="form-label">Имя питомца:</label>
-          <input type="text" id="editDogName" class="form-input" required maxlength="30" value="Арчи">
+          <input type="text" id="editDogName" class="form-input" required maxlength="30" value="Рэджи">
         </div>
 
         <div class="form-group">
@@ -235,12 +235,12 @@
 
         <div class="form-group">
           <label for="editDogAge" class="form-label">Возраст:</label>
-          <input type="text" id="editDogAge" class="form-input" required maxlength="20" value="3 года">
+          <input type="text" id="editDogAge" class="form-input" required maxlength="20" value="2 года">
         </div>
 
         <div class="form-group">
           <label for="editDogStatus" class="form-label">Статус / описание:</label>
-          <textarea id="editDogStatus" class="form-textarea" rows="3" required maxlength="200">Любитель мячиков, долгих прогулок и обнимашек 🦴🌾</textarea>
+          <textarea id="editDogStatus" class="form-textarea" rows="3" required maxlength="200">Золотое сердце, любитель автопутешествий, снежных сугробов и обнимашек 🦴🌾💛</textarea>
         </div>
 
         <div class="modal-footer">
@@ -259,7 +259,7 @@
         <button type="button" class="modal-close-btn" data-close-modal="deleteConfirmModal" aria-label="Закрыть">✕</button>
       </div>
       <div class="modal-body">
-        <p class="confirm-text">Вы уверены, что хотите удалить эту публикацию из дневника Арчи? Запись будет удалена на всех устройствах.</p>
+        <p class="confirm-text">Вы уверены, что хотите удалить эту публикацию из дневника Рэджи? Запись будет удалена на всех устройствах.</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-ghost" data-close-modal="deleteConfirmModal">Отмена</button>
@@ -281,6 +281,6 @@
   <div class="toast-container" id="toastContainer" aria-live="polite" style="display: none !important;"></div>
 
   <!-- Core JavaScript с версионированием для сброса кэша на мобильных устройствах -->
-  <script src="app.js?v=20261014_03"></script>
+  <script src="app.js?v=20261104_reggie"></script>
 </body>
 </html>
