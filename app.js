@@ -4,10 +4,9 @@
  * ============================================================================
  * - База данных: https://blog-site-50c99-default-rtdb.firebaseio.com/
  * - Мгновенная синхронизация между смартфоном, ПК и любыми устройствами
- * - Автоматический перенос локальных постов, созданных на телефоне, в облако
- * - Оптимизация изображений через Canvas (сжатие до 1200px для быстрой загрузки)
- * - Мультизагрузка фото/видео и Инстаграм-карусель
- * - Автоматическое обновление данных при переключении вкладок
+ * - Инстаграм-карусель для альбомов с поддержкой свайпов
+ * - Интерактивная реакция «Дай лапу!» со счётчиком, начинающимся с нуля
+ * - Настоящие комментарии читателей в реальном времени
  * ============================================================================
  */
 
@@ -18,12 +17,12 @@
   const FIREBASE_BASE_URL = 'https://blog-site-50c99-default-rtdb.firebaseio.com';
 
   const STORAGE_KEYS = {
-    POSTS_CACHE: 'reggie_blog_posts_cache_v4',
-    PROFILE_CACHE: 'reggie_blog_profile_cache_v4',
-    LIKED_POSTS: 'reggie_blog_liked_ids_v4'
+    POSTS_CACHE: 'reggie_blog_posts_cache_v5',
+    PROFILE_CACHE: 'reggie_blog_profile_cache_v5',
+    LIKED_POSTS: 'reggie_blog_liked_ids_v5'
   };
 
-  // Посты по умолчанию (Рэджи Золотое Сердце)
+  // Исходные посты фотодневника (все счётчики лапок с нуля, без заглушек)
   const DEFAULT_POSTS = [
     {
       id: 'reggie-post-01',
@@ -31,16 +30,9 @@
         { type: 'photo', url: 'assets/reggie/reggie-snow.jpg' }
       ],
       text: 'Официально заявляю: свежий снег на вкус — 10 из 10! ❄️🐾 Проинспектировал первый сугроб, зарылся носом до самого дна и собрал коллекцию идеальных снежинок прямо на усах. Зима, я готов к сугробам!',
-      likes: 48,
+      likes: 0,
       createdAt: '2026-11-04T16:00:00.000Z',
-      comments: [
-        {
-          id: 'c1',
-          author: 'Мама Рэджи',
-          text: 'Снежный медвежонок! Зато домой пришел самый довольный 💛',
-          createdAt: '2026-11-04T16:45:00.000Z'
-        }
-      ]
+      comments: []
     },
     {
       id: 'reggie-post-02',
@@ -48,16 +40,9 @@
         { type: 'photo', url: 'assets/reggie/reggie-portrait.jpg' }
       ],
       text: 'Тот самый фирменный взгляд, когда услышал шуршание пакета с сыром за три комнаты от кухни 🧀✨ Говорят, золотистые ретриверы умеют улыбаться глазами. Ну правда же, как можно отказать этому взгляду?',
-      likes: 64,
+      likes: 0,
       createdAt: '2026-11-02T13:20:00.000Z',
-      comments: [
-        {
-          id: 'c2',
-          author: 'Артём',
-          text: 'Голливудская собачья улыбка! Красавец 😍',
-          createdAt: '2026-11-02T14:10:00.000Z'
-        }
-      ]
+      comments: []
     },
     {
       id: 'reggie-post-03',
@@ -67,16 +52,9 @@
         { type: 'photo', url: 'assets/reggie/reggie-car-sleepy.jpg' }
       ],
       text: 'Хроники автопутешествий Рэджи 🚗💨 Листайте карусель:\n1️⃣ Главный штурман контролирует маршрут строго между сиденьями.\n2️⃣ Ловлю тёплые лучи солнца и кайфую от скорости.\n3️⃣ Полный собачий дзен и релакс в гамаке — когда укачало под любимую музыку.',
-      likes: 82,
+      likes: 0,
       createdAt: '2026-10-26T11:15:00.000Z',
-      comments: [
-        {
-          id: 'c3',
-          author: 'Папа',
-          text: 'Лучший попутчик во всех дорожных приключениях 🚙🐾',
-          createdAt: '2026-10-26T12:00:00.000Z'
-        }
-      ]
+      comments: []
     },
     {
       id: 'reggie-post-04',
@@ -84,16 +62,9 @@
         { type: 'photo', url: 'assets/reggie/reggie-blue-hood.jpg' }
       ],
       text: 'Сказали, на улице осенний ветер, поэтому экипировали по последнему слову собачьей моды 🧢💙 Теперь я похож то ли на космонавта, то ли на стильного сибирского хаски. Зато уши в тепле и комфорте!',
-      likes: 53,
+      likes: 0,
       createdAt: '2026-10-18T17:40:00.000Z',
-      comments: [
-        {
-          id: 'c4',
-          author: 'Оля',
-          text: 'Боже, этот взгляд из-под капюшона просто покорил! 😂🥰',
-          createdAt: '2026-10-18T18:15:00.000Z'
-        }
-      ]
+      comments: []
     },
     {
       id: 'reggie-post-05',
@@ -101,33 +72,19 @@
         { type: 'photo', url: 'assets/reggie/reggie-window.jpg' }
       ],
       text: 'Минутка собачьей философии у вечернего окна 🪟🌙 Подбородок в надёжной руке Человека, за стеклом зажигаются городские огни, а дома пахнет ужином и уютом. Золотое сердце бьётся в ритме спокойствия.',
-      likes: 77,
+      likes: 0,
       createdAt: '2026-10-10T19:25:00.000Z',
-      comments: [
-        {
-          id: 'c5',
-          author: 'Лена',
-          text: 'Сколько нежности и безграничной преданности в одном кадре... ❤️',
-          createdAt: '2026-10-10T20:00:00.000Z'
-        }
-      ]
+      comments: []
     },
     {
       id: 'reggie-post-06',
       media: [
         { type: 'photo', url: 'assets/reggie/reggie-birthday.jpg' }
       ],
-      text: 'Мне исполнилось 2 года! 🎂🎉 Самый вкусный праздничный торт с нашей совместной фотографией и кучей сердечек. Два года бесконечных игр, погонь за бабочками, искренней любви и счастливых виляний хвостом!',
-      likes: 95,
+      text: 'Праздничный день и любимый торт! 🎂🎉 Самый вкусный тортик с нашей совместной фотографией и кучей сердечек. Бесконечные игры, погони за бабочками, искренняя любовь и счастливые виляния хвостом!',
+      likes: 0,
       createdAt: '2026-09-30T15:00:00.000Z',
-      comments: [
-        {
-          id: 'c6',
-          author: 'Семья Рэджи',
-          text: 'С Днём Рождения, наш золотой мальчик! Будь самым здоровым и счастливым 🥳🐾',
-          createdAt: '2026-09-30T15:40:00.000Z'
-        }
-      ]
+      comments: []
     },
     {
       id: 'reggie-post-07',
@@ -135,16 +92,9 @@
         { type: 'photo', url: 'assets/reggie/reggie-beavers.jpg' }
       ],
       text: 'Провёл важные дипломатические переговоры с местными бобрами у лесного ручья 🪵🦫 Подошёл на цыпочках, осторожно обнюхал — пахнут сосной, ведут себя подозрительно неподвижно. Проверка пройдена, территория под контролем!',
-      likes: 58,
+      likes: 0,
       createdAt: '2026-09-15T13:30:00.000Z',
-      comments: [
-        {
-          id: 'c7',
-          author: 'Денис',
-          text: 'Рэджи насторожился, но хвостом повилял на всякий случай 😆',
-          createdAt: '2026-09-15T14:15:00.000Z'
-        }
-      ]
+      comments: []
     },
     {
       id: 'reggie-post-08',
@@ -152,16 +102,9 @@
         { type: 'photo', url: 'assets/reggie/reggie-bears.jpg' }
       ],
       text: 'Ночная сказка в парке ✨🐻 Встретили целое семейство светящихся белых медведей! Решил не лаять, а гордо сесть рядом для фото — показать, кто здесь самый дружелюбный великан с золотым сердцем.',
-      likes: 71,
+      likes: 0,
       createdAt: '2026-08-28T21:45:00.000Z',
-      comments: [
-        {
-          id: 'c8',
-          author: 'Катя',
-          text: 'Какая волшебная атмосфера! Рэджи светится ярче любых гирлянд ✨',
-          createdAt: '2026-08-28T22:20:00.000Z'
-        }
-      ]
+      comments: []
     },
     {
       id: 'reggie-post-09',
@@ -169,16 +112,9 @@
         { type: 'photo', url: 'assets/reggie/reggie-forest.jpg' }
       ],
       text: 'Летняя экспедиция в сосновый бор 🌲🌾 Солнце, птичьи трели, аромат клевера и мой любимый Человек рядом. Набегался так, что язык еле помещается во рту — вот оно, абсолютное собачье счастье!',
-      likes: 89,
+      likes: 0,
       createdAt: '2026-08-10T10:45:00.000Z',
-      comments: [
-        {
-          id: 'c9',
-          author: 'Влад',
-          text: 'Замечательный кадр! Тепло и душевно 🌿🐕',
-          createdAt: '2026-08-10T11:30:00.000Z'
-        }
-      ]
+      comments: []
     },
     {
       id: 'reggie-post-10',
@@ -186,16 +122,9 @@
         { type: 'photo', url: 'assets/reggie/reggie-twilight.jpg' }
       ],
       text: 'Вечерний час тишины 🌅 Розовый закат, прохладная трава и мой стильный ошейник. Люблю после активных догонялок просто лечь на поляне и слушать, как засыпает вечерний парк.',
-      likes: 62,
+      likes: 0,
       createdAt: '2026-07-22T21:10:00.000Z',
-      comments: [
-        {
-          id: 'c10',
-          author: 'Ирина',
-          text: 'Какой статный красавец на фоне вечернего неба! 🐾',
-          createdAt: '2026-07-22T21:50:00.000Z'
-        }
-      ]
+      comments: []
     },
     {
       id: 'reggie-post-11',
@@ -203,24 +132,16 @@
         { type: 'photo', url: 'assets/reggie/reggie-walk.jpg' }
       ],
       text: 'Бодрый утренний шаг! ☀️🐾 Уши назад, хвост трубой, поводок натянут ровно настолько, чтобы успевать исследовать каждый встречный куст. Всем пушистого, бодрого и радостного дня!',
-      likes: 56,
+      likes: 0,
       createdAt: '2026-07-05T09:20:00.000Z',
-      comments: [
-        {
-          id: 'c11',
-          author: 'Соседи по парку',
-          text: 'Всегда заряжаемся вашей утренней энергией! Доброго дня, Рэджи!',
-          createdAt: '2026-07-05T10:05:00.000Z'
-        }
-      ]
+      comments: []
     }
   ];
 
   const DEFAULT_PROFILE = {
     name: 'Рэджи',
     breed: 'Золотистый ретривер',
-    age: '2 года',
-    status: 'Золотое сердце, любитель автопутешествий, снежных сугробов и обнимашек 🦴🌾💛',
+    status: 'Любитель автопутешествий, снежных сугробов и бесконечных обнимашек 🦴🌾💛',
     avatarUrl: 'assets/avatar.jpg'
   };
 
@@ -229,9 +150,7 @@
     posts: [],
     profile: { ...DEFAULT_PROFILE },
     likedPostIds: new Set(),
-    activeFilter: 'all', // 'all' | 'photo' | 'video' | 'liked'
-    attachedMediaList: [],
-    postToDeleteId: null,
+    activeFilter: 'all', // 'all' | 'liked'
     isSyncing: false,
     lastSyncHash: ''
   };
@@ -241,56 +160,31 @@
     header: document.querySelector('.site-header'),
     logoLink: document.getElementById('logoLink'),
     navLinks: document.querySelectorAll('.nav-link'),
-    openNewPostFocusBtn: document.getElementById('openNewPostFocusBtn'),
 
     // Hero Profile
     profileAvatarImg: document.getElementById('profileAvatarImg'),
     profileName: document.getElementById('profileName'),
-    profileAge: document.getElementById('profileAge'),
+    profileBreed: document.getElementById('profileBreed'),
     profileStatus: document.getElementById('profileStatus'),
     statPostsCount: document.getElementById('statPostsCount'),
     statLikesCount: document.getElementById('statLikesCount'),
-    editProfileBtn: document.getElementById('editProfileBtn'),
-
-    // Creator
-    quickAvatarMini: document.getElementById('quickAvatarMini'),
-    inlinePostText: document.getElementById('inlinePostText'),
-    mediaFilesInput: document.getElementById('mediaFilesInput'),
-    btnAttachMedia: document.getElementById('btnAttachMedia'),
-    attachedMediaTray: document.getElementById('attachedMediaTray'),
-    mediaPreviewsList: document.getElementById('mediaPreviewsList'),
-    attachedCountBadge: document.getElementById('attachedCountBadge'),
-    inlinePublishBtn: document.getElementById('inlinePublishBtn'),
 
     // Feed & Filters
     filterTabs: document.querySelectorAll('.filter-tab'),
     countAll: document.getElementById('countAll'),
-    countPhoto: document.getElementById('countPhoto'),
-    countVideo: document.getElementById('countVideo'),
+    countLiked: document.getElementById('countLiked'),
     feedContainer: document.getElementById('feedContainer'),
     feedEmptyState: document.getElementById('feedEmptyState'),
     emptyStateDesc: document.getElementById('emptyStateDesc'),
     emptyStateResetBtn: document.getElementById('emptyStateResetBtn'),
 
-    // Modals
-    editProfileModal: document.getElementById('editProfileModal'),
-    editProfileForm: document.getElementById('editProfileForm'),
-    editAvatarPreview: document.getElementById('editAvatarPreview'),
-    editAvatarFileInput: document.getElementById('editAvatarFileInput'),
-    editAvatarBrowseBtn: document.getElementById('editAvatarBrowseBtn'),
-    editAvatarUrlInput: document.getElementById('editAvatarUrlInput'),
-    editDogName: document.getElementById('editDogName'),
-    editDogBreed: document.getElementById('editDogBreed'),
-    editDogAge: document.getElementById('editDogAge'),
-    editDogStatus: document.getElementById('editDogStatus'),
-
-    deleteConfirmModal: document.getElementById('deleteConfirmModal'),
-    confirmDeletePostBtn: document.getElementById('confirmDeletePostBtn'),
+    // Lightbox
     lightboxOverlay: document.getElementById('lightboxOverlay'),
     lightboxImg: document.getElementById('lightboxImg'),
     lightboxCaption: document.getElementById('lightboxCaption'),
     lightboxCloseBtn: document.getElementById('lightboxCloseBtn'),
-    toastContainer: document.getElementById('toastContainer'),
+
+    // Demo Reset
     resetDemoDataBtn: document.getElementById('resetDemoDataBtn')
   };
 
@@ -305,10 +199,9 @@
       if (post.mediaUrl) {
         post.media = [
           {
-            type: post.type || 'photo',
+            type: 'photo',
             url: post.mediaUrl,
-            fallbackUrl: post.fallbackMediaUrl,
-            posterUrl: post.posterUrl
+            fallbackUrl: post.fallbackMediaUrl
           }
         ];
       } else {
@@ -316,23 +209,15 @@
       }
     }
 
-    // Нормализуем каждый медиафайл внутри поста
+    // Нормализуем каждый медиафайл внутри поста (только фото)
     post.media = post.media.filter(Boolean).map(m => {
       if (typeof m === 'string') {
-        const isVid = m.startsWith('data:video') || /\.(mp4|webm|mov)$/i.test(m);
-        return { type: isVid ? 'video' : 'photo', url: m };
-      }
-      let mType = m.type || '';
-      if (mType.startsWith('video') || /\.(mp4|webm|mov)$/i.test(m.url || '')) {
-        mType = 'video';
-      } else {
-        mType = 'photo';
+        return { type: 'photo', url: m };
       }
       return {
-        type: mType,
+        type: 'photo',
         url: m.url || '',
         fallbackUrl: m.fallbackUrl || '',
-        posterUrl: m.posterUrl || '',
         name: m.name || ''
       };
     });
@@ -340,7 +225,7 @@
     if (!Array.isArray(post.comments)) {
       post.comments = [];
     }
-    if (typeof post.likes !== 'number') {
+    if (typeof post.likes !== 'number' || post.likes < 0) {
       post.likes = 0;
     }
     if (typeof post.text !== 'string') {
@@ -356,7 +241,7 @@
     return post;
   }
 
-  // Загрузка постов из Firebase с таймаутом и сортировкой
+  // Загрузка постов из Firebase
   async function fetchCloudPosts() {
     try {
       const controller = new AbortController();
@@ -380,7 +265,6 @@
       }
 
       const normalized = rawPosts.map(normalizePostMedia).filter(Boolean);
-      // Сортировка: новые посты всегда сверху!
       normalized.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
       return normalized;
     } catch (err) {
@@ -389,14 +273,13 @@
     }
   }
 
-  // Сохранение постов в Firebase с защитой от квоты localStorage на мобильных
+  // Сохранение постов в Firebase
   async function saveCloudPosts(posts) {
     try {
-      // Сохраняем локально в кэш (перехватываем возможное QuotaExceededError на мобильном Safari)
       try {
         localStorage.setItem(STORAGE_KEYS.POSTS_CACHE, JSON.stringify(posts));
       } catch (e) {
-        console.warn('Кэш localStorage переполнен, сохраняем напрямую в облако:', e);
+        console.warn('Кэш localStorage недоступен:', e);
       }
 
       const res = await fetch(`${FIREBASE_BASE_URL}/posts.json`, {
@@ -424,24 +307,7 @@
     }
   }
 
-  // Сохранение профиля в Firebase
-  async function saveCloudProfile(profile) {
-    try {
-      try {
-        localStorage.setItem(STORAGE_KEYS.PROFILE_CACHE, JSON.stringify(profile));
-      } catch (e) {}
-
-      await fetch(`${FIREBASE_BASE_URL}/profile.json`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profile)
-      });
-    } catch (err) {
-      console.error('Ошибка сохранения профиля в Firebase:', err);
-    }
-  }
-
-  // Интеллектуальное слияние: если на телефоне был локальный пост, автоматически отправляем его в облако!
+  // Синхронизация данных
   async function syncDataWithCloud(isInitial = false) {
     if (state.isSyncing) return;
     state.isSyncing = true;
@@ -450,101 +316,37 @@
       const cloudPosts = await fetchCloudPosts();
       const cloudProfile = await fetchCloudProfile();
 
-      // Проверяем локальный кэш
-      let localPosts = [];
-      const cached = localStorage.getItem(STORAGE_KEYS.POSTS_CACHE);
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed)) {
-            localPosts = parsed.filter(Boolean).map(normalizePostMedia).filter(Boolean);
-          }
-        } catch (e) {}
-      }
-
-      let mergedPosts = cloudPosts;
-
-      // Если в облаке еще ничего нет — сохраняем локальные или демо
-      if (!mergedPosts || mergedPosts.length === 0) {
-        mergedPosts = localPosts.length > 0 ? localPosts : JSON.parse(JSON.stringify(DEFAULT_POSTS)).map(normalizePostMedia);
-        mergedPosts.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-        await saveCloudPosts(mergedPosts);
-      } else if (localPosts.length > 0) {
-        // Проверяем: есть ли в памяти телефона пост, которого еще нет в облаке?
-        const cloudIds = new Set(mergedPosts.map(p => p.id));
-        const unsyncedLocalPosts = localPosts.filter(p => !cloudIds.has(p.id));
-
-        if (unsyncedLocalPosts.length > 0) {
-          // Добавляем локальные посты в облако!
-          mergedPosts = [...unsyncedLocalPosts, ...mergedPosts];
-          mergedPosts.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-          await saveCloudPosts(mergedPosts);
-        }
+      let postsToUse = cloudPosts;
+      if (!postsToUse || postsToUse.length === 0) {
+        postsToUse = JSON.parse(JSON.stringify(DEFAULT_POSTS)).map(normalizePostMedia);
+        postsToUse.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        await saveCloudPosts(postsToUse);
       }
 
       if (cloudProfile) {
-        state.profile = cloudProfile;
+        // Убеждаемся, что возраст удален
+        delete cloudProfile.age;
+        state.profile = Object.assign({}, DEFAULT_PROFILE, cloudProfile);
       }
 
-      // Всегда сортируем: новые посты сверху
-      mergedPosts.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      postsToUse.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
-      // Проверяем, изменились ли данные
-      const currentHash = JSON.stringify(mergedPosts.map(p => ({ id: p.id, likes: p.likes, c: (p.comments || []).length })));
+      const currentHash = JSON.stringify(postsToUse.map(p => ({ id: p.id, likes: p.likes, c: (p.comments || []).length })));
       if (currentHash !== state.lastSyncHash || isInitial) {
-        state.posts = mergedPosts;
+        state.posts = postsToUse;
         state.lastSyncHash = currentHash;
         renderProfile();
         renderFeed();
       }
     } catch (err) {
-      console.warn('Синхронизация временно недоступна, работаем с кэшем:', err);
+      console.warn('Синхронизация временно недоступна, работаем с локальными данными:', err);
     } finally {
       state.isSyncing = false;
     }
   }
 
   // ==========================================================================
-  // 2. ОПТИМИЗАЦИЯ ИЗОБРАЖЕНИЙ (CANVAS COMPRESSOR ДЛЯ СМАРТФОНОВ)
-  // ==========================================================================
-
-  function optimizeImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.82) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          let { width, height } = img;
-          if (width > maxWidth || height > maxHeight) {
-            if (width > height) {
-              height = Math.round((height * maxWidth) / width);
-              width = maxWidth;
-            } else {
-              width = Math.round((width * maxHeight) / height);
-              height = maxHeight;
-            }
-          }
-
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Сжатый компактный JPEG (100–250 КБ вместо 10 МБ с камеры смартфона)
-          const dataUrl = canvas.toDataURL('image/jpeg', quality);
-          resolve(dataUrl);
-        };
-        img.onerror = () => reject(new Error('Ошибка загрузки фото'));
-        img.src = e.target.result;
-      };
-      reader.onerror = () => reject(new Error('Ошибка чтения файла'));
-      reader.readAsDataURL(file);
-    });
-  }
-
-  // ==========================================================================
-  // 3. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И ОТОБРАЖЕНИЕ
+  // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И ОТОБРАЖЕНИЕ
   // ==========================================================================
 
   function formatDate(isoString) {
@@ -581,17 +383,11 @@
       .replace(/'/g, '&#039;');
   }
 
-  function showToast() {
-    // Всплывающие уведомления полностью отключены по запросу пользователя
-  }
-
   function renderProfile() {
-    DOM.profileName.textContent = state.profile.name;
-    DOM.profileAge.textContent = state.profile.age;
-    DOM.profileStatus.textContent = state.profile.status;
-    DOM.profileAvatarImg.src = state.profile.avatarUrl;
-    DOM.quickAvatarMini.src = state.profile.avatarUrl;
-    DOM.editAvatarPreview.src = state.profile.avatarUrl;
+    if (DOM.profileName) DOM.profileName.textContent = state.profile.name;
+    if (DOM.profileBreed) DOM.profileBreed.textContent = state.profile.breed || 'Золотистый ретривер';
+    if (DOM.profileStatus) DOM.profileStatus.textContent = state.profile.status;
+    if (DOM.profileAvatarImg) DOM.profileAvatarImg.src = state.profile.avatarUrl;
 
     updateCounters();
   }
@@ -599,6 +395,7 @@
   function updateCounters() {
     const totalPosts = state.posts.length;
     const totalLikes = state.posts.reduce((sum, p) => sum + (p.likes || 0), 0);
+    const likedCount = state.likedPostIds.size;
 
     if (DOM.statPostsCount) DOM.statPostsCount.textContent = totalPosts;
     if (DOM.statLikesCount) {
@@ -609,177 +406,16 @@
       }
     }
 
-    const photoCount = state.posts.filter(p => (p.media || []).some(m => m.type === 'photo')).length;
-    const videoCount = state.posts.filter(p => (p.media || []).some(m => m.type === 'video')).length;
-
     if (DOM.countAll) DOM.countAll.textContent = totalPosts;
-    if (DOM.countPhoto) DOM.countPhoto.textContent = photoCount;
-    if (DOM.countVideo) DOM.countVideo.textContent = videoCount;
+    if (DOM.countLiked) DOM.countLiked.textContent = likedCount;
   }
 
   // ==========================================================================
-  // 4. МУЛЬТИЗАГРУЗКА МЕДИАФАЙЛОВ В КРЕАТОРЕ
-  // ==========================================================================
-
-  DOM.btnAttachMedia.addEventListener('click', () => {
-    DOM.mediaFilesInput.click();
-  });
-
-  DOM.mediaFilesInput.addEventListener('change', async () => {
-    const files = Array.from(DOM.mediaFilesInput.files || []);
-    if (!files.length) return;
-
-    for (const file of files) {
-      const isVideo = file.type.startsWith('video/') || file.name.match(/\.(mp4|webm|mov)$/i);
-
-      if (isVideo) {
-        if (file.size > 20 * 1024 * 1024) {
-          showToast(`⚠️ Видео ${file.name} больше 20 МБ`, '🎥');
-          continue;
-        }
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          state.attachedMediaList.push({
-            type: 'video',
-            url: e.target.result,
-            name: file.name
-          });
-          renderAttachedMediaTray();
-        };
-        reader.readAsDataURL(file);
-      } else {
-        // Фото сжимаем через Canvas для молниеносной синхронизации по сети
-        try {
-          const optimizedDataUrl = await optimizeImage(file);
-          state.attachedMediaList.push({
-            type: 'photo',
-            url: optimizedDataUrl,
-            name: file.name
-          });
-          renderAttachedMediaTray();
-        } catch (err) {
-          showToast(`⚠️ Не удалось обработать ${file.name}`);
-        }
-      }
-    }
-
-    DOM.mediaFilesInput.value = '';
-  });
-
-  function renderAttachedMediaTray() {
-    const count = state.attachedMediaList.length;
-
-    if (count === 0) {
-      DOM.attachedMediaTray.style.display = 'none';
-      DOM.attachedCountBadge.style.display = 'none';
-      DOM.mediaPreviewsList.innerHTML = '';
-      return;
-    }
-
-    DOM.attachedMediaTray.style.display = 'block';
-    DOM.attachedCountBadge.style.display = 'inline-block';
-    DOM.attachedCountBadge.textContent = `${count} ${count === 1 ? 'файл' : count < 5 ? 'файла' : 'файлов'}`;
-
-    DOM.mediaPreviewsList.innerHTML = '';
-
-    state.attachedMediaList.forEach((item, index) => {
-      const thumbWrap = document.createElement('div');
-      thumbWrap.className = 'media-preview-thumb-wrap';
-
-      if (item.type === 'video') {
-        thumbWrap.innerHTML = `
-          <video src="${escapeHtml(item.url)}" class="media-preview-thumb-video" preload="metadata"></video>
-          <span class="thumb-video-badge">🎥 Видео</span>
-          <button type="button" class="thumb-remove-btn" data-remove-index="${index}" title="Удалить">✕</button>
-        `;
-      } else {
-        thumbWrap.innerHTML = `
-          <img src="${escapeHtml(item.url)}" alt="Превью" class="media-preview-thumb-img">
-          <button type="button" class="thumb-remove-btn" data-remove-index="${index}" title="Удалить">✕</button>
-        `;
-      }
-
-      thumbWrap.querySelector('.thumb-remove-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        state.attachedMediaList.splice(index, 1);
-        renderAttachedMediaTray();
-      });
-
-      DOM.mediaPreviewsList.appendChild(thumbWrap);
-    });
-  }
-
-  // Публикация нового поста с мгновенной отправкой в Firebase
-  DOM.inlinePublishBtn.addEventListener('click', async () => {
-    const text = DOM.inlinePostText.value.trim();
-    const media = state.attachedMediaList;
-
-    if (!text && media.length === 0) {
-      showToast('⚠️ Напишите текст или добавьте фото/видео через «+»');
-      DOM.inlinePostText.focus();
-      return;
-    }
-
-    DOM.inlinePublishBtn.disabled = true;
-    DOM.inlinePublishBtn.textContent = 'Сохранение...';
-
-    try {
-      const newPost = {
-        id: 'post_' + Date.now(),
-        media: [...media],
-        text: text,
-        likes: 0,
-        createdAt: new Date().toISOString(),
-        comments: []
-      };
-
-      state.posts.unshift(newPost);
-
-      // Сброс полей креатора
-      DOM.inlinePostText.value = '';
-      state.attachedMediaList = [];
-      renderAttachedMediaTray();
-      renderFeed();
-
-      // Сохраняем в Firebase
-      const success = await saveCloudPosts(state.posts);
-
-      if (success) {
-        showToast('История опубликована и доступна на всех устройствах! ☁️🐾🎉');
-      } else {
-        showToast('История сохранена в кэш. Проверьте интернет-соединение.');
-      }
-
-      DOM.feedContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } catch (err) {
-      console.error('Ошибка при публикации:', err);
-      showToast('⚠️ Произошла ошибка при публикации');
-    } finally {
-      DOM.inlinePublishBtn.disabled = false;
-      DOM.inlinePublishBtn.textContent = 'Опубликовать';
-    }
-  });
-
-  if (DOM.openNewPostFocusBtn) {
-    DOM.openNewPostFocusBtn.addEventListener('click', () => {
-      DOM.inlinePostText.focus();
-      DOM.inlinePostText.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    });
-  }
-
-  // ==========================================================================
-  // 5. ОТРИСОВКА ЛЕНТЫ ПУБЛИКАЦИЙ
+  // 3. ОТРИСОВКА ЛЕНТЫ ПУБЛИКАЦИЙ
   // ==========================================================================
 
   function getFilteredPosts() {
     return state.posts.filter(post => {
-      const media = post.media || [];
-      if (state.activeFilter === 'photo') {
-        return media.some(m => m.type === 'photo');
-      }
-      if (state.activeFilter === 'video') {
-        return media.some(m => m.type === 'video');
-      }
       if (state.activeFilter === 'liked') {
         return state.likedPostIds.has(post.id);
       }
@@ -798,13 +434,9 @@
       DOM.feedEmptyState.style.display = 'block';
 
       if (state.activeFilter === 'liked') {
-        DOM.emptyStateDesc.textContent = 'Вы еще не поставили ни одной лапки 🐾 Нажмите «Дай лапу!» под записью.';
-      } else if (state.activeFilter === 'photo') {
-        DOM.emptyStateDesc.textContent = 'В ленте пока нет записей с фотографиями.';
-      } else if (state.activeFilter === 'video') {
-        DOM.emptyStateDesc.textContent = 'В ленте пока нет записей с видеороликами.';
+        DOM.emptyStateDesc.textContent = 'Вы еще не поставили ни одной лапки 🐾 Нажмите «Дай лапу!» под любой историей Рэджи.';
       } else {
-        DOM.emptyStateDesc.textContent = 'В дневнике пока нет записей. Напишите первую историю выше!';
+        DOM.emptyStateDesc.textContent = 'В дневнике пока нет записей.';
       }
       return;
     }
@@ -835,16 +467,7 @@
     const commentsCount = (post.comments || []).length;
     const mediaList = Array.isArray(post.media) ? post.media : [];
 
-    let typeLabel = '📝 Заметка';
-    const hasPhotos = mediaList.some(m => m && m.type === 'photo');
-    const hasVideos = mediaList.some(m => m && m.type === 'video');
-    if (hasPhotos && hasVideos) {
-      typeLabel = `📸🎥 Альбом (${mediaList.length})`;
-    } else if (hasVideos) {
-      typeLabel = mediaList.length > 1 ? `🎥 Видео (${mediaList.length})` : '🎥 Видео';
-    } else if (hasPhotos) {
-      typeLabel = mediaList.length > 1 ? `📸 Фото (${mediaList.length})` : '📸 Фото';
-    }
+    const typeLabel = mediaList.length > 1 ? `📸 Альбом (${mediaList.length})` : '📸 Фото';
 
     let mediaHtml = '';
     if (mediaList.length > 1) {
@@ -882,7 +505,6 @@
         </div>
         <div class="post-header-actions">
           <span class="post-type-tag">${typeLabel}</span>
-          <button type="button" class="post-delete-btn" title="Удалить запись" data-action="delete-post" aria-label="Удалить запись">🗑️</button>
         </div>
       </header>
 
@@ -929,75 +551,31 @@
       } catch (carouselErr) {
         console.warn('Ошибка инициализации карусели:', carouselErr);
       }
-    } else if (mediaList.length === 1 && mediaList[0] && mediaList[0].type === 'video') {
-      try {
-        const playerWrap = card.querySelector('.custom-video-player');
-        if (playerWrap) initCustomVideoPlayer(playerWrap);
-      } catch (playerErr) {
-        console.warn('Ошибка инициализации видеоплеера:', playerErr);
-      }
     }
 
     return card;
   }
 
   // ==========================================================================
-  // 6. ИНСТАГРАМ-КАРУСЕЛЬ МЕДИА В ПОСТАХ
+  // 4. ИНСТАГРАМ-КАРУСЕЛЬ МЕДИА В ПОСТАХ
   // ==========================================================================
 
   function createCarouselHtml(postId, mediaList, caption) {
     const total = mediaList.length;
 
-    const slidesHtml = mediaList.map((m, index) => {
-      if (m.type === 'video') {
-        return `
-          <div class="carousel-slide" data-slide-index="${index}">
-            <div class="custom-video-player paused" id="player-${postId}-${index}">
-              <video 
-                class="custom-video-element" 
-                src="${escapeHtml(m.url)}" 
-                poster="${escapeHtml(m.posterUrl || 'assets/sleepy-dog.jpg')}"
-                preload="metadata" 
-                loop 
-                playsinline
-              ></video>
-              <button type="button" class="video-big-play-btn" title="Воспроизвести">
-                <span>▶</span>
-              </button>
-              <div class="video-controls-overlay">
-                <div class="video-progress-bar-container">
-                  <div class="video-progress-filled"></div>
-                </div>
-                <div class="video-controls-row">
-                  <div class="video-ctrl-left">
-                    <button type="button" class="video-ctrl-btn video-play-pause-btn">▶</button>
-                    <span class="video-time-display">0:00 / 0:00</span>
-                  </div>
-                  <div class="video-ctrl-right">
-                    <button type="button" class="video-ctrl-btn video-mute-btn">🔊</button>
-                    <button type="button" class="video-ctrl-btn video-fullscreen-btn">⛶</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-      } else {
-        return `
-          <div class="carousel-slide" data-slide-index="${index}">
-            <img 
-              src="${escapeHtml(m.url)}" 
-              alt="Фотография" 
-              class="carousel-slide-photo" 
-              loading="lazy"
-              data-lightbox-src="${escapeHtml(m.url)}" 
-              data-lightbox-caption="${escapeHtml(caption)}"
-              onerror="if(this.src!=='${m.fallbackUrl || ''}') this.src='${m.fallbackUrl || ''}';"
-            >
-          </div>
-        `;
-      }
-    }).join('');
+    const slidesHtml = mediaList.map((m, index) => `
+      <div class="carousel-slide" data-slide-index="${index}">
+        <img 
+          src="${escapeHtml(m.url)}" 
+          alt="Фотография" 
+          class="carousel-slide-photo" 
+          loading="lazy"
+          data-lightbox-src="${escapeHtml(m.url)}" 
+          data-lightbox-caption="${escapeHtml(caption)}"
+          onerror="if(this.src!=='${m.fallbackUrl || ''}') this.src='${m.fallbackUrl || ''}';"
+        >
+      </div>
+    `).join('');
 
     const dotsHtml = mediaList.map((_, i) => `<span class="carousel-dot ${i === 0 ? 'active' : ''}"></span>`).join('');
 
@@ -1031,33 +609,7 @@
 
     let currentIndex = 0;
 
-    slides.forEach(slide => {
-      try {
-        const player = slide.querySelector('.custom-video-player');
-        if (player) initCustomVideoPlayer(player);
-      } catch (e) {}
-    });
-
-    function pauseAllVideos() {
-      slides.forEach(slide => {
-        try {
-          const video = slide.querySelector('.custom-video-element');
-          const player = slide.querySelector('.custom-video-player');
-          if (video && !video.paused) {
-            video.pause();
-            if (player) {
-              player.classList.remove('playing');
-              player.classList.add('paused');
-              const playBtn = player.querySelector('.video-play-pause-btn');
-              if (playBtn) playBtn.textContent = '▶';
-            }
-          }
-        } catch (e) {}
-      });
-    }
-
     function updateCarousel() {
-      pauseAllVideos();
       if (track) track.style.transform = `translateX(-${currentIndex * 100}%)`;
 
       if (counterBadge) counterBadge.textContent = `${currentIndex + 1} / ${total}`;
@@ -1116,39 +668,6 @@
   }
 
   function createSingleMediaHtml(postId, media, caption) {
-    if (media.type === 'video') {
-      return `
-        <div class="post-media-wrap custom-video-player paused" id="player-${postId}">
-          <video 
-            class="custom-video-element" 
-            src="${escapeHtml(media.url)}" 
-            poster="${escapeHtml(media.posterUrl || 'assets/sleepy-dog.jpg')}"
-            preload="metadata" 
-            loop 
-            playsinline
-          ></video>
-          <button type="button" class="video-big-play-btn" title="Воспроизвести">
-            <span>▶</span>
-          </button>
-          <div class="video-controls-overlay">
-            <div class="video-progress-bar-container">
-              <div class="video-progress-filled"></div>
-            </div>
-            <div class="video-controls-row">
-              <div class="video-ctrl-left">
-                <button type="button" class="video-ctrl-btn video-play-pause-btn">▶</button>
-                <span class="video-time-display">0:00 / 0:00</span>
-              </div>
-              <div class="video-ctrl-right">
-                <button type="button" class="video-ctrl-btn video-mute-btn">🔊</button>
-                <button type="button" class="video-ctrl-btn video-fullscreen-btn">⛶</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
     return `
       <div class="post-media-wrap" data-lightbox-src="${escapeHtml(media.url)}" data-lightbox-caption="${escapeHtml(caption)}">
         <img 
@@ -1163,121 +682,7 @@
   }
 
   // ==========================================================================
-  // 7. КАСТОМНЫЙ ВИДЕОПЛЕЕР
-  // ==========================================================================
-
-  function initCustomVideoPlayer(player) {
-    if (!player) return;
-    const video = player.querySelector('.custom-video-element');
-    if (!video) return;
-    const bigPlayBtn = player.querySelector('.video-big-play-btn');
-    const playPauseBtn = player.querySelector('.video-play-pause-btn');
-    const progressBar = player.querySelector('.video-progress-bar-container');
-    const progressFill = player.querySelector('.video-progress-filled');
-    const timeDisplay = player.querySelector('.video-time-display');
-    const muteBtn = player.querySelector('.video-mute-btn');
-    const fullscreenBtn = player.querySelector('.video-fullscreen-btn');
-
-    function formatVideoTime(seconds) {
-      if (isNaN(seconds)) return '0:00';
-      const mins = Math.floor(seconds / 60);
-      const secs = Math.floor(seconds % 60);
-      return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-    }
-
-    function togglePlay() {
-      if (video.paused || video.ended) {
-        video.play().then(() => {
-          player.classList.remove('paused');
-          player.classList.add('playing');
-          if (playPauseBtn) playPauseBtn.textContent = '⏸';
-        }).catch(err => {
-          console.warn('Воспроизведение заблокировано браузером:', err);
-        });
-      } else {
-        video.pause();
-        player.classList.remove('playing');
-        player.classList.add('paused');
-        if (playPauseBtn) playPauseBtn.textContent = '▶';
-      }
-    }
-
-    if (bigPlayBtn) {
-      bigPlayBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        togglePlay();
-      });
-    }
-
-    video.addEventListener('click', () => {
-      togglePlay();
-    });
-
-    if (playPauseBtn) {
-      playPauseBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        togglePlay();
-      });
-    }
-
-    video.addEventListener('timeupdate', () => {
-      if (!isNaN(video.duration) && video.duration > 0) {
-        const percent = (video.currentTime / video.duration) * 100;
-        if (progressFill) progressFill.style.width = `${percent}%`;
-        if (timeDisplay) timeDisplay.textContent = `${formatVideoTime(video.currentTime)} / ${formatVideoTime(video.duration)}`;
-      }
-    });
-
-    video.addEventListener('loadedmetadata', () => {
-      if (timeDisplay) timeDisplay.textContent = `0:00 / ${formatVideoTime(video.duration)}`;
-    });
-
-    if (progressBar) {
-      progressBar.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const rect = progressBar.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const width = rect.width;
-        if (width > 0 && !isNaN(video.duration)) {
-          video.currentTime = (clickX / width) * video.duration;
-        }
-      });
-    }
-
-    if (muteBtn) {
-      muteBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        video.muted = !video.muted;
-        muteBtn.textContent = video.muted ? '🔇' : '🔊';
-      });
-    }
-
-    if (fullscreenBtn) {
-      fullscreenBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (!document.fullscreenElement) {
-          if (player.requestFullscreen) {
-            player.requestFullscreen();
-          } else if (video.webkitEnterFullscreen) {
-            video.webkitEnterFullscreen();
-          }
-        } else {
-          if (document.exitFullscreen) {
-            document.exitFullscreen();
-          }
-        }
-      });
-    }
-
-    video.addEventListener('ended', () => {
-      player.classList.remove('playing');
-      player.classList.add('paused');
-      if (playPauseBtn) playPauseBtn.textContent = '▶';
-    });
-  }
-
-  // ==========================================================================
-  // 8. РЕАКЦИИ И КОММЕНТАРИИ
+  // 5. РЕАКЦИИ И КОММЕНТАРИИ
   // ==========================================================================
 
   function triggerPawBurst(buttonElement) {
@@ -1308,21 +713,19 @@
       post.likes = Math.max(0, (post.likes || 1) - 1);
       buttonElement.classList.remove('liked');
       buttonElement.querySelector('.like-btn-text').textContent = 'Дай лапу!';
-      showToast('Вы забрали лапку назад 🐾');
     } else {
       state.likedPostIds.add(postId);
       post.likes = (post.likes || 0) + 1;
       buttonElement.classList.add('liked');
       buttonElement.querySelector('.like-btn-text').textContent = 'Лапа дана!';
       triggerPawBurst(buttonElement);
-      showToast('Рэджи завилял хвостиком! Спасибо за лапку 🐶✨');
     }
 
     buttonElement.querySelector('.like-counter').textContent = `(${post.likes})`;
     localStorage.setItem(STORAGE_KEYS.LIKED_POSTS, JSON.stringify(Array.from(state.likedPostIds)));
     updateCounters();
 
-    // Синхронизируем обновленные лайки с Firebase
+    // Синхронизируем счётчик лайков с Firebase
     await saveCloudPosts(state.posts);
   }
 
@@ -1379,91 +782,12 @@
     const toggleBtn = formElement.closest('.post-card').querySelector('.comments-btn-label');
     if (toggleBtn) toggleBtn.textContent = `Комментировать (${post.comments.length})`;
 
-    showToast('Комментарий добавлен! 💬');
-
-    // Сохраняем в Firebase
+    // Сохраняем комментарии в Firebase
     await saveCloudPosts(state.posts);
   }
 
   // ==========================================================================
-  // 9. УДАЛЕНИЕ ЗАПИСЕЙ
-  // ==========================================================================
-
-  function promptDeletePost(postId) {
-    state.postToDeleteId = postId;
-    openModal(DOM.deleteConfirmModal);
-  }
-
-  DOM.confirmDeletePostBtn.addEventListener('click', async () => {
-    if (!state.postToDeleteId) return;
-
-    const index = state.posts.findIndex(p => p.id === state.postToDeleteId);
-    if (index !== -1) {
-      state.posts.splice(index, 1);
-      state.likedPostIds.delete(state.postToDeleteId);
-      localStorage.setItem(STORAGE_KEYS.LIKED_POSTS, JSON.stringify(Array.from(state.likedPostIds)));
-      renderFeed();
-      showToast('Запись удалена на всех устройствах', '🗑️');
-      await saveCloudPosts(state.posts);
-    }
-
-    state.postToDeleteId = null;
-    closeModal(DOM.deleteConfirmModal);
-  });
-
-  // ==========================================================================
-  // 10. РЕДАКТИРОВАНИЕ ПРОФИЛЯ
-  // ==========================================================================
-
-  DOM.editProfileBtn.addEventListener('click', () => {
-    DOM.editDogName.value = state.profile.name;
-    DOM.editDogBreed.value = state.profile.breed || 'Золотистый ретривер';
-    DOM.editDogAge.value = state.profile.age;
-    DOM.editDogStatus.value = state.profile.status;
-    DOM.editAvatarPreview.src = state.profile.avatarUrl;
-    DOM.editAvatarUrlInput.value = '';
-    openModal(DOM.editProfileModal);
-  });
-
-  DOM.editAvatarBrowseBtn.addEventListener('click', () => {
-    DOM.editAvatarFileInput.click();
-  });
-
-  DOM.editAvatarFileInput.addEventListener('change', async () => {
-    if (DOM.editAvatarFileInput.files && DOM.editAvatarFileInput.files[0]) {
-      try {
-        const compressedAvatar = await optimizeImage(DOM.editAvatarFileInput.files[0], 500, 500, 0.85);
-        DOM.editAvatarPreview.src = compressedAvatar;
-      } catch (e) {
-        showToast('⚠️ Ошибка обработки фото аватара');
-      }
-    }
-  });
-
-  DOM.editAvatarUrlInput.addEventListener('input', () => {
-    const url = DOM.editAvatarUrlInput.value.trim();
-    if (url) DOM.editAvatarPreview.src = url;
-  });
-
-  DOM.editProfileForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    state.profile.name = DOM.editDogName.value.trim() || 'Рэджи';
-    state.profile.breed = DOM.editDogBreed.value.trim() || 'Золотистый ретривер';
-    state.profile.age = DOM.editDogAge.value.trim() || '2 года';
-    state.profile.status = DOM.editDogStatus.value.trim() || 'Золотое сердце, любитель автопутешествий, снежных сугробов и обнимашек 🦴🌾💛';
-    state.profile.avatarUrl = DOM.editAvatarPreview.src;
-
-    renderProfile();
-    renderFeed();
-    closeModal(DOM.editProfileModal);
-    showToast('Профиль обновлен в облаке! ✨');
-
-    await saveCloudProfile(state.profile);
-  });
-
-  // ==========================================================================
-  // 11. ФИЛЬТРАЦИЯ И НАВИГАЦИЯ
+  // 6. ФИЛЬТРАЦИЯ И НАВИГАЦИЯ
   // ==========================================================================
 
   DOM.filterTabs.forEach(tab => {
@@ -1507,7 +831,7 @@
   });
 
   // ==========================================================================
-  // 12. ДЕЛЕГИРОВАНИЕ СОБЫТИЙ В ЛЕНТЕ
+  // 7. ДЕЛЕГИРОВАНИЕ СОБЫТИЙ В ЛЕНТЕ
   // ==========================================================================
 
   DOM.feedContainer.addEventListener('click', (e) => {
@@ -1526,13 +850,6 @@
     if (commentsToggleBtn) {
       e.stopPropagation();
       toggleCommentsDrawer(postId, card);
-      return;
-    }
-
-    const deleteBtn = e.target.closest('[data-action="delete-post"]');
-    if (deleteBtn) {
-      e.stopPropagation();
-      promptDeletePost(postId);
       return;
     }
 
@@ -1555,7 +872,7 @@
   });
 
   // ==========================================================================
-  // 13. ПОЛНОЭКРАННЫЙ LIGHTBOX & МОДАЛКИ
+  // 8. ПОЛНОЭКРАННЫЙ LIGHTBOX
   // ==========================================================================
 
   function openLightbox(src, caption) {
@@ -1577,39 +894,11 @@
     if (e.target === DOM.lightboxOverlay) closeLightbox();
   });
 
-  function openModal(modalEl) {
-    modalEl.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeModal(modalEl) {
-    modalEl.style.display = 'none';
-    document.body.style.overflow = '';
-  }
-
-  document.querySelectorAll('[data-close-modal]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const modalId = btn.dataset.closeModal;
-      const modal = document.getElementById(modalId);
-      if (modal) closeModal(modal);
-    });
-  });
-
-  document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-    backdrop.addEventListener('click', (e) => {
-      if (e.target === backdrop) closeModal(backdrop);
-    });
-  });
-
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       if (DOM.lightboxOverlay.style.display === 'flex') {
         closeLightbox();
-        return;
       }
-      document.querySelectorAll('.modal-backdrop').forEach(modal => {
-        if (modal.style.display === 'flex') closeModal(modal);
-      });
     }
   });
 
@@ -1621,9 +910,9 @@
     }
   }, { passive: true });
 
-  // Сброс к демо-данным в облаке
+  // Сброс к исходным фотоисториям в облаке
   DOM.resetDemoDataBtn.addEventListener('click', async () => {
-    if (confirm('Сбросить блог Рэджи к исходным фото в облаке? Все добавленные посты будут удалены.')) {
+    if (confirm('Сбросить блог Рэджи к исходным фото? Счётчики лапок начнутся с нуля.')) {
       state.posts = JSON.parse(JSON.stringify(DEFAULT_POSTS));
       state.profile = { ...DEFAULT_PROFILE };
       state.likedPostIds.clear();
@@ -1631,7 +920,6 @@
 
       renderProfile();
       renderFeed();
-      showToast('Истории Рэджи восстановлены в облаке! 🔄');
 
       await saveCloudPosts(state.posts);
       await saveCloudProfile(state.profile);
@@ -1639,16 +927,17 @@
   });
 
   // ==========================================================================
-  // 14. ЗАПУСК И ФОНОВОЕ АВТООБНОВЛЕНИЕ
+  // 9. ЗАПУСК И ФОНОВОЕ АВТООБНОВЛЕНИЕ
   // ==========================================================================
 
   async function initApp() {
-    // 1. Быстро загружаем кэш для мгновенной отрисовки без задержек
+    // 1. Быстро загружаем сохраненные лайки пользователя
     const cachedLiked = localStorage.getItem(STORAGE_KEYS.LIKED_POSTS);
     if (cachedLiked) {
       try { state.likedPostIds = new Set(JSON.parse(cachedLiked)); } catch (e) {}
     }
 
+    // 2. Быстро загружаем кэш для мгновенной отрисовки без задержек
     const cachedPosts = localStorage.getItem(STORAGE_KEYS.POSTS_CACHE);
     if (cachedPosts) {
       try {
@@ -1662,15 +951,15 @@
       } catch (e) {}
     }
 
-    // 2. Синхронизируем с Firebase в реальном времени
+    // 3. Синхронизируем с Firebase в реальном времени
     await syncDataWithCloud(true);
 
-    // 3. Фоновое обновление: каждые 8 секунд опрашиваем облако для мгновенного появления новых постов
+    // 4. Фоновое обновление: каждые 10 секунд опрашиваем облако для синхронизации лапок и комментариев
     setInterval(() => {
       syncDataWithCloud(false);
-    }, 8000);
+    }, 10000);
 
-    // 4. При возвращении на вкладку браузера сразу проверяем обновления
+    // 5. При возвращении на вкладку браузера сразу проверяем обновления
     window.addEventListener('focus', () => {
       syncDataWithCloud(false);
     });

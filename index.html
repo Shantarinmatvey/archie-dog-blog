@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v=20261104_reggie">
+  <link rel="stylesheet" href="style.css?v=20261104_reggie_v2">
 </head>
 <body>
   <!-- Background Decorative Shapes / Warm Ambient -->
@@ -34,18 +34,9 @@
 
       <!-- Desktop Nav -->
       <nav class="header-nav" aria-label="Основная навигация">
-        <button type="button" class="nav-link active" data-action="all">Главная</button>
-        <button type="button" class="nav-link" data-action="photo">Галерея фото</button>
-        <button type="button" class="nav-link" data-action="video">Видеохроники</button>
+        <button type="button" class="nav-link active" data-action="all">Все истории</button>
+        <button type="button" class="nav-link" data-action="liked">Понравившиеся 🐾</button>
       </nav>
-
-      <div class="header-actions">
-        <!-- Desktop Add Post Button (скрыта на мобильных) -->
-        <button type="button" class="btn btn-primary btn-add-post desktop-only-btn" id="openNewPostFocusBtn">
-          <span class="btn-icon">+</span>
-          <span class="btn-label">Написать</span>
-        </button>
-      </div>
     </div>
   </header>
 
@@ -72,81 +63,19 @@
         </div>
         
         <p class="profile-subtitle" id="profileSubtitle">
-          <span id="profileAge">2 года</span> • <span id="profileStatus">Любитель автопутешествий, снежных сугробов и бесконечных обнимашек 🦴🌾💛</span>
+          <span id="profileBreed">Золотистый ретривер</span> • <span id="profileStatus">Любитель автопутешествий, снежных сугробов и бесконечных обнимашек 🦴🌾💛</span>
         </p>
 
         <!-- Live Counters -->
         <div class="profile-stats-row">
           <div class="stat-pill">
             <strong id="statPostsCount">11</strong>
-            <span>постов</span>
+            <span>историй</span>
           </div>
           <div class="stat-pill stat-pill-highlight">
             <span class="stat-paw-icon">🐾</span>
-            <strong id="statLikesCount">715</strong>
+            <strong id="statLikesCount">0</strong>
             <span>лапок</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="profile-actions">
-        <button type="button" class="btn btn-outline" id="editProfileBtn" title="Редактировать профиль">
-          <span class="btn-icon">✏️</span> Редактировать
-        </button>
-      </div>
-    </section>
-
-    <!-- Clean & Minimalist Post Creator (Только текст + плюсик для медиафайлов) -->
-    <section class="quick-creator-card" id="quickCreatorSection" aria-label="Создание новой публикации">
-      <div class="quick-creator-body">
-        <div class="quick-avatar-mini">
-          <img 
-            id="quickAvatarMini" 
-            src="assets/avatar.jpg" 
-            alt="Рэджи"
-            onerror="this.src='assets/avatar.jpg'"
-          >
-        </div>
-        <div class="quick-input-area">
-          <textarea 
-            id="inlinePostText" 
-            class="quick-textarea" 
-            placeholder="Что нового, Рэджи? Расскажи свою историю..." 
-            rows="2"
-          ></textarea>
-
-          <!-- Горизонтальная лента предпросмотра прикрепленных медиафайлов (фото/видео) -->
-          <div class="attached-media-tray" id="attachedMediaTray" style="display: none;">
-            <div class="media-previews-list" id="mediaPreviewsList"></div>
-          </div>
-
-          <!-- Нижняя строка: плюсик для добавления фото/видео + кнопка "Опубликовать" -->
-          <div class="quick-creator-bottom-bar">
-            <div class="media-attach-group">
-              <!-- Скрытый инпут с поддержкой множественного выбора картинок и видео -->
-              <input 
-                type="file" 
-                id="mediaFilesInput" 
-                class="hidden-file-input" 
-                multiple 
-                accept="image/*,video/*"
-              >
-              <button 
-                type="button" 
-                class="btn-attach-media" 
-                id="btnAttachMedia" 
-                title="Прикрепить фото или видео" 
-                aria-label="Прикрепить фото или видео"
-              >
-                <span class="attach-plus-icon">+</span>
-                <span class="attach-label">Добавить фото / видео</span>
-              </button>
-              <span class="attached-count-badge" id="attachedCountBadge" style="display: none;"></span>
-            </div>
-
-            <button type="button" class="btn btn-primary btn-publish" id="inlinePublishBtn">
-              Опубликовать
-            </button>
           </div>
         </div>
       </div>
@@ -156,27 +85,24 @@
     <section class="feed-header-section">
       <div class="feed-filters-bar" role="tablist" aria-label="Фильтры публикаций">
         <button type="button" class="filter-tab active" data-filter="all" role="tab" aria-selected="true">
-          Все <span class="filter-count" id="countAll">11</span>
+          Все истории 📸 <span class="filter-count" id="countAll">11</span>
         </button>
-        <button type="button" class="filter-tab" data-filter="photo" role="tab" aria-selected="false">
-          Только фото 📸 <span class="filter-count" id="countPhoto">11</span>
-        </button>
-        <button type="button" class="filter-tab" data-filter="video" role="tab" aria-selected="false">
-          Только видео 🎥 <span class="filter-count" id="countVideo">0</span>
+        <button type="button" class="filter-tab" data-filter="liked" role="tab" aria-selected="false">
+          Понравившиеся 🐾 <span class="filter-count" id="countLiked">0</span>
         </button>
       </div>
     </section>
 
     <!-- Feed Section (Cards Grid) -->
     <section class="feed-grid-container" id="feedContainer" aria-label="Лента публикаций" aria-live="polite">
-      <!-- Dynamic Post Cards with Carousel & Custom Video Player rendered by app.js -->
+      <!-- Dynamic Post Cards with Carousel rendered by app.js -->
     </section>
 
     <!-- Empty State -->
     <div class="feed-empty-state" id="feedEmptyState" style="display: none;">
       <div class="empty-icon">🐕</div>
       <h3 class="empty-title">Записей пока нет</h3>
-      <p class="empty-desc" id="emptyStateDesc">Рэджи еще не поделился такой историей. Попробуйте выбрать другой фильтр.</p>
+      <p class="empty-desc" id="emptyStateDesc">Рэджи еще не поделился такой историей.</p>
       <button type="button" class="btn btn-secondary" id="emptyStateResetBtn">Показать все записи</button>
     </div>
 
@@ -197,77 +123,6 @@
     </div>
   </footer>
 
-  <!-- ==================== MODALS ==================== -->
-
-  <!-- Modal: Редактировать профиль -->
-  <div class="modal-backdrop" id="editProfileModal" role="dialog" aria-modal="true" aria-labelledby="editProfileTitle" style="display: none;">
-    <div class="modal-dialog">
-      <div class="modal-header">
-        <h2 class="modal-title" id="editProfileTitle">Редактировать профиль Рэджи ✏️</h2>
-        <button type="button" class="modal-close-btn" data-close-modal="editProfileModal" aria-label="Закрыть">✕</button>
-      </div>
-
-      <form id="editProfileForm" class="modal-form">
-        <!-- Avatar Change -->
-        <div class="form-group avatar-edit-group">
-          <label class="form-label">Аватарка питомца:</label>
-          <div class="avatar-edit-flex">
-            <img id="editAvatarPreview" src="assets/avatar.jpg" alt="Превью" class="avatar-preview-img">
-            <div class="avatar-edit-controls">
-              <input type="file" id="editAvatarFileInput" class="hidden-file-input" accept="image/*">
-              <button type="button" class="btn btn-sm btn-outline" id="editAvatarBrowseBtn">Загрузить фото</button>
-              <div class="avatar-url-sub">
-                <input type="url" id="editAvatarUrlInput" class="form-input form-input-sm" placeholder="Или ссылка на аватар (URL)">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="editDogName" class="form-label">Имя питомца:</label>
-          <input type="text" id="editDogName" class="form-input" required maxlength="30" value="Рэджи">
-        </div>
-
-        <div class="form-group">
-          <label for="editDogBreed" class="form-label">Порода:</label>
-          <input type="text" id="editDogBreed" class="form-input" required maxlength="40" value="Золотистый ретривер">
-        </div>
-
-        <div class="form-group">
-          <label for="editDogAge" class="form-label">Возраст:</label>
-          <input type="text" id="editDogAge" class="form-input" required maxlength="20" value="2 года">
-        </div>
-
-        <div class="form-group">
-          <label for="editDogStatus" class="form-label">Статус / описание:</label>
-          <textarea id="editDogStatus" class="form-textarea" rows="3" required maxlength="200">Золотое сердце, любитель автопутешествий, снежных сугробов и обнимашек 🦴🌾💛</textarea>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-ghost" data-close-modal="editProfileModal">Отмена</button>
-          <button type="submit" class="btn btn-primary">Сохранить изменения</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal: Подтверждение удаления публикации -->
-  <div class="modal-backdrop" id="deleteConfirmModal" role="dialog" aria-modal="true" style="display: none;">
-    <div class="modal-dialog modal-dialog-sm">
-      <div class="modal-header">
-        <h2 class="modal-title">Удалить запись? 🗑️</h2>
-        <button type="button" class="modal-close-btn" data-close-modal="deleteConfirmModal" aria-label="Закрыть">✕</button>
-      </div>
-      <div class="modal-body">
-        <p class="confirm-text">Вы уверены, что хотите удалить эту публикацию из дневника Рэджи? Запись будет удалена на всех устройствах.</p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-ghost" data-close-modal="deleteConfirmModal">Отмена</button>
-        <button type="button" class="btn btn-danger" id="confirmDeletePostBtn">Да, удалить</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Lightbox: Полноэкранный просмотр фотографий -->
   <div class="lightbox-overlay" id="lightboxOverlay" role="dialog" aria-modal="true" aria-label="Просмотр фотографии" style="display: none;">
     <button type="button" class="lightbox-close-btn" id="lightboxCloseBtn" title="Закрыть (Esc)" aria-label="Закрыть">✕</button>
@@ -281,6 +136,6 @@
   <div class="toast-container" id="toastContainer" aria-live="polite" style="display: none !important;"></div>
 
   <!-- Core JavaScript с версионированием для сброса кэша на мобильных устройствах -->
-  <script src="app.js?v=20261104_reggie"></script>
+  <script src="app.js?v=20261104_reggie_v2"></script>
 </body>
 </html>
