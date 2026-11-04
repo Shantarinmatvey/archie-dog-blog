@@ -182,10 +182,7 @@
     lightboxOverlay: document.getElementById('lightboxOverlay'),
     lightboxImg: document.getElementById('lightboxImg'),
     lightboxCaption: document.getElementById('lightboxCaption'),
-    lightboxCloseBtn: document.getElementById('lightboxCloseBtn'),
-
-    // Demo Reset
-    resetDemoDataBtn: document.getElementById('resetDemoDataBtn')
+    lightboxCloseBtn: document.getElementById('lightboxCloseBtn')
   };
 
   // ==========================================================================
@@ -909,22 +906,6 @@
       DOM.header.classList.remove('scrolled');
     }
   }, { passive: true });
-
-  // Сброс к исходным фотоисториям в облаке
-  DOM.resetDemoDataBtn.addEventListener('click', async () => {
-    if (confirm('Сбросить блог Рэджи к исходным фото? Счётчики лапок начнутся с нуля.')) {
-      state.posts = JSON.parse(JSON.stringify(DEFAULT_POSTS));
-      state.profile = { ...DEFAULT_PROFILE };
-      state.likedPostIds.clear();
-      localStorage.removeItem(STORAGE_KEYS.LIKED_POSTS);
-
-      renderProfile();
-      renderFeed();
-
-      await saveCloudPosts(state.posts);
-      await saveCloudProfile(state.profile);
-    }
-  });
 
   // ==========================================================================
   // 9. ЗАПУСК И ФОНОВОЕ АВТООБНОВЛЕНИЕ
